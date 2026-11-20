@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>מסע השברים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a living pizza-world platformer sits behind every screen; chunky candy buttons on top; every fraction is drawn as real parts. */
+:root{
+  --ink:#24214a; --soft:#67628f; --cream:#fff7ec; --line:#e9e3fb;
+  --sun:#ffc83d; --sunD:#e19e0b; --coral:#ff6b5b; --coralD:#d94a3b;
+  --teal:#16b6a6; --tealD:#0d8e82; --grape:#7b5cff; --grapeD:#5a3de0;
+  --sky:#35b3ff; --skyD:#1a8fd3; --pink:#ff6fae; --pinkD:#de4b8d;
+  --ok:#17b26a; --okBg:#e3f9ee; --badBg:#fff0e1;
+  --fill:#ff8a5c;
+  --f-ui:'Rubik','Fredoka',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  --f-num:'Fredoka','Rubik',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:#9fdcff;overscroll-behavior:none}
+body{font-family:var(--f-ui);color:var(--ink);font-size:18px;line-height:1.45;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:4px solid var(--grape);outline-offset:3px}
+#app{position:fixed;top:0;right:0;bottom:0;left:0;overflow:hidden}
+#world{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;display:block;touch-action:none}
+
+/* fractions in text */
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-family:var(--f-num);font-weight:700;line-height:1;margin:0 .08em;unicode-bidi:isolate}
+.fr .fn{padding:0 .14em .08em;border-bottom:.09em solid currentColor;min-width:.95em;text-align:center}
+.fr .fd{padding:.08em .14em 0;min-width:.95em;text-align:center}
+.mx{display:inline-flex;align-items:center;gap:.1em;unicode-bidi:isolate;vertical-align:middle}
+.mx .mw{font-family:var(--f-num);font-weight:700;font-size:1.3em;line-height:1}
+.nm{font-family:var(--f-num);font-weight:700}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;white-space:nowrap}
+.say{display:inline-block;background:#f1ecff;border-radius:12px;padding:0 10px;color:var(--grapeD)}
+
+/* screens */
+.screen{position:absolute;top:0;right:0;bottom:0;left:0;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 14px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 14px);z-index:3}
+.screen.on{display:block;animation:fade .3s ease both}
+@keyframes fade{from{opacity:0}}
+.wrap{min-height:100%;display:flex;align-items:center;justify-content:center}
+.card{background:rgba(255,255,255,.95);border-radius:34px;box-shadow:0 10px 0 rgba(36,33,74,.16),0 24px 60px rgba(36,33,74,.2);padding:22px 24px;width:min(100%,780px)}
+.card.wide{width:min(100%,1000px)}
+
+/* buttons */
+.btn{--c:var(--grape);--cd:var(--grapeD);display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:60px;padding:12px 24px;border-radius:22px;background:var(--c);color:#fff;font-weight:800;font-size:21px;line-height:1.15;box-shadow:0 6px 0 var(--cd);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--cd)}
+.btn.sun{--c:var(--sun);--cd:var(--sunD);color:#3a2700}
+.btn.sky{--c:var(--sky);--cd:var(--skyD)}
+.btn.coral{--c:var(--coral);--cd:var(--coralD)}
+.btn.teal{--c:var(--teal);--cd:var(--tealD)}
+.btn.ghost{--c:#fff;--cd:var(--line);color:var(--ink);box-shadow:0 6px 0 var(--cd),inset 0 0 0 2px var(--line)}
+.btn.big{font-size:24px;min-height:68px}
+.btn.wide{width:100%}
+
+/* home */
+.home{text-align:center;position:relative}
+.hero{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px}
+.hero svg.logo{width:96px;height:96px;flex:none;animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#homeChar{width:96px;height:96px;flex:none}
+.title{margin:0;font-weight:900;font-size:clamp(46px,9vw,86px);line-height:1.02;letter-spacing:-.5px}
+.title .t1{color:var(--ink)}
+.title .t2 span{display:inline-block;color:var(--k);transform:rotate(var(--r));text-shadow:0 5px 0 rgba(36,33,74,.14);animation:drop .7s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--i) * 70ms)}
+@keyframes drop{from{opacity:0;transform:translateY(-46px) rotate(var(--r))}}
+.tag{color:var(--soft);font-weight:500;margin:10px 0 20px;font-size:clamp(16px,2.3vw,21px)}
+.menu{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.menu .btn{flex:1 1 200px;max-width:290px}
+.wallet{display:inline-flex;align-items:center;gap:8px;margin-top:18px;background:var(--cream);border-radius:999px;padding:6px 16px 6px 10px;font-weight:700;color:var(--soft);white-space:nowrap}
+.wallet b,.wallet .mx,.wallet .fr,.wallet .nm{color:var(--ink)}
+.wallet.sm{margin:0;font-size:16px}
+.wallet svg{flex:none}
+
+/* sub-screen header */
+.sbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sbar h2{margin:0;font-size:clamp(24px,3.4vw,32px);font-weight:900;flex:1;min-width:150px}
+.back{background:var(--cream);border-radius:16px;padding:10px 16px;font-weight:700;box-shadow:0 4px 0 var(--line);white-space:nowrap}
+.back:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.lead{color:var(--soft);margin:8px 0 14px;font-weight:500}
+h3.sec{font-size:22px;margin:22px 0 8px;font-weight:800}
+
+/* topics */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px 14px;margin-top:6px}
+.tcard{display:flex;align-items:center;gap:14px;text-align:start;background:#fff;border:3px solid var(--line);border-radius:24px;padding:12px 14px;box-shadow:0 6px 0 var(--line);position:relative;transition:transform .08s}
+.tcard:active{transform:translateY(4px);box-shadow:0 2px 0 var(--line)}
+.tnum{flex:none;width:58px;height:58px;border-radius:18px;background:var(--tc);color:#fff;display:grid;place-items:center;font:700 28px var(--f-num);box-shadow:0 4px 0 rgba(36,33,74,.18)}
+.tinfo{flex:1;min-width:0}
+.tinfo b{display:block;font-size:20px;line-height:1.2}
+.tinfo small{display:block;color:var(--soft);font-size:15px;margin-top:2px}
+.tinfo .fr{font-size:13px}
+.tinfo em{display:block;font-style:normal;font-size:13px;color:var(--soft);margin-top:2px}
+.tstars{display:block;font-size:17px;white-space:nowrap;letter-spacing:1px;margin-top:3px}
+.tstars i{font-style:normal;filter:grayscale(1);opacity:.28}
+.tstars i.on{filter:none;opacity:1}
+.tkey{position:absolute;top:-11px;left:14px;background:var(--coral);color:#fff;font-size:13px;font-weight:800;border-radius:999px;padding:2px 10px;box-shadow:0 3px 0 var(--coralD)}
+
+/* HUD */
+#hud{position:absolute;top:calc(env(safe-area-inset-top) + 10px);left:calc(env(safe-area-inset-left) + 10px);right:calc(env(safe-area-inset-right) + 10px);display:flex;justify-content:space-between;align-items:flex-start;gap:8px;pointer-events:none;z-index:5}
+.hgrp{display:flex;gap:8px;align-items:center;pointer-events:auto}
+.hpill{display:flex;align-items:center;gap:8px;background:#fff;border-radius:18px;padding:5px 14px;min-height:52px;box-shadow:0 5px 0 rgba(36,33,74,.22);font-weight:800;font-size:19px;white-space:nowrap}
+.hpill .fr{font-size:15px}
+.hpill .mx .mw{font-size:1.25em}
+.hbtn{width:52px;height:52px;border-radius:18px;background:#fff;box-shadow:0 5px 0 rgba(36,33,74,.22);font-size:22px;display:grid;place-items:center}
+.hbtn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(36,33,74,.22)}
+#hudHearts{font-size:21px;letter-spacing:1px}
+.gsep{width:2px;height:24px;background:var(--line);border-radius:2px}
+@media (max-width:700px),(max-height:430px){.hpill{font-size:16px;padding:3px 10px;min-height:44px}.hbtn{width:44px;height:44px;font-size:19px}#hudHearts{font-size:17px}.dn{display:none}}
+@media (max-width:480px){.hgrp{gap:5px}.hpill{padding:2px 7px;gap:4px}#hudHearts{font-size:14px;letter-spacing:0}.hbtn{width:40px;height:40px;font-size:17px}.gsep,.door{display:none}}
+
+/* touch pad */
+#pad{position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;z-index:4}
+.pb{pointer-events:auto;position:absolute;bottom:calc(env(safe-area-inset-bottom) + 18px);width:86px;height:86px;border-radius:50%;background:rgba(255,255,255,.88);box-shadow:0 6px 0 rgba(36,33,74,.3);display:grid;place-items:center;touch-action:none;-webkit-user-select:none;user-select:none}
+.pb svg{width:46%;height:46%;stroke:var(--ink);stroke-width:5;fill:none;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.pb.down{transform:translateY(4px);box-shadow:0 2px 0 rgba(36,33,74,.3);background:#fff}
+#bL{left:calc(env(safe-area-inset-left) + 18px)}
+#bR{left:calc(env(safe-area-inset-left) + 120px)}
+#bJ{right:calc(env(safe-area-inset-right) + 18px);width:100px;height:100px;background:rgba(255,200,61,.95);box-shadow:0 6px 0 var(--sunD)}
+@media (max-height:430px){.pb{width:68px;height:68px;bottom:calc(env(safe-area-inset-bottom) + 10px)}#bR{left:calc(env(safe-area-inset-left) + 96px)}#bJ{width:80px;height:80px}}
+
+.toast{position:absolute;top:calc(env(safe-area-inset-top) + 76px);left:50%;background:var(--ink);color:#fff;font-weight:800;font-size:20px;padding:10px 22px;border-radius:999px;z-index:6;pointer-events:none;white-space:nowrap;animation:toast 2.6s ease both}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,-14px)}12%,82%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-8px)}}
+
+/* modals */
+.modal{position:absolute;top:0;right:0;bottom:0;left:0;z-index:10;background:rgba(28,24,66,.5);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 10px)}
+.qcard,.mcard{background:#fff;border-radius:30px;box-shadow:0 10px 0 rgba(36,33,74,.28);width:min(100%,980px);max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px 20px;animation:pop .3s cubic-bezier(.3,1.5,.5,1) both}
+.mcard{width:min(100%,580px);text-align:center;padding:24px}
+@keyframes pop{from{opacity:0;transform:scale(.9) translateY(10px)}}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.badge{background:var(--sun);color:#3a2700;font-weight:800;border-radius:999px;padding:5px 16px;box-shadow:0 4px 0 var(--sunD);font-size:18px;white-space:nowrap}
+.qtry{color:var(--soft);font-weight:700;font-size:16px;text-align:left}
+.qtitle{margin:10px 0 2px;font-size:clamp(22px,3vw,30px);font-weight:800;line-height:1.35}
+.qtitle .fr{font-size:.95em}
+.qsub{margin:2px 0 0;color:var(--soft);font-weight:500;font-size:18px}
+.qsub .fr{font-size:.95em}
+.qbody{display:grid;gap:16px;margin-top:12px;grid-template-columns:minmax(0,1fr)}
+.qbody.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center}
+@media (max-width:720px){.qbody.two{grid-template-columns:minmax(0,1fr)}}
+.qvis{background:var(--cream);border-radius:22px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:110px}
+.qvis svg.vis{width:100%;height:auto;max-height:44vh}
+.bigfr{font-size:62px;color:var(--ink);line-height:1}
+.refcap{font-weight:700;color:var(--soft);font-size:16px;align-self:stretch;text-align:center}
+
+.opts{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.opts.list{grid-template-columns:minmax(0,1fr)}
+.opts.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.opt{background:#fff;border:3px solid var(--line);border-radius:22px;box-shadow:0 5px 0 var(--line);padding:12px 14px;min-height:74px;font-weight:700;font-size:21px;line-height:1.3;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;transition:transform .08s}
+.opt:active{transform:translateY(3px);box-shadow:0 2px 0 var(--line)}
+.opt .fr{font-size:32px}
+.opt .mx{font-size:30px}
+.opt .nm{font-size:32px}
+.opt.pic{display:block;padding:10px;min-height:96px}
+.opt.pic svg{width:100%;height:auto;max-height:150px}
+.opt.no{border-style:dashed;opacity:.42;box-shadow:none}
+.opt.ok{border-color:var(--ok);background:var(--okBg);box-shadow:0 5px 0 var(--ok)}
+.reveal{animation:glow 1.1s ease-in-out infinite}
+.opt.reveal,.chip.reveal,.wchip.reveal{border-color:var(--ok)}
+@keyframes glow{50%{box-shadow:0 0 0 7px rgba(23,178,106,.35)}}
+
+.trail{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.tchip{background:var(--okBg);color:#0c7a47;border-radius:999px;padding:4px 12px;font-weight:700;font-size:16px}
+.stepn{color:var(--soft);font-weight:700;font-size:15px}
+.stepq{font-size:22px;font-weight:800;margin:2px 0 12px}
+
+.chips{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.chip{min-width:84px;min-height:84px;border-radius:22px;border:3px solid var(--line);background:#fff;box-shadow:0 5px 0 var(--line);display:grid;place-items:center;padding:8px}
+.chip .fr{font-size:32px}
+.chip.sel{border-color:var(--grape);background:#f1ecff;box-shadow:0 5px 0 var(--grape)}
+.chip.wrongsel{border-color:var(--coral);background:#fff1ee}
+.flags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:4px 0 10px}
+.flag{width:78px;min-height:118px;-webkit-clip-path:polygon(0 0,100% 0,100% 74%,50% 100%,0 74%);clip-path:polygon(0 0,100% 0,100% 74%,50% 100%,0 74%);background:var(--fc);display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:9px;transition:transform .12s}
+.flag .ll{width:34px;height:34px;border-radius:50%;background:#fff;display:grid;place-items:center;font-weight:900;font-size:20px;color:var(--ink);transition:box-shadow .12s}
+.flag .fr{font-size:23px;color:var(--ink)}
+.flag.sel{transform:translateY(7px)}
+.flag.sel .ll{box-shadow:0 0 0 4px var(--ink)}
+.flag.wrongsel .ll{box-shadow:0 0 0 4px var(--coral)}
+.flag.reveal .ll{box-shadow:0 0 0 4px var(--ok)}
+.secret{display:inline-block;background:var(--sun);border-radius:12px;padding:0 12px;font-size:1.25em}
+
+.wrow{margin-bottom:12px}
+.wrow .wl{font-weight:700;color:var(--soft);font-size:16px;margin-bottom:6px}
+.wchips{display:flex;flex-wrap:wrap;gap:8px}
+.wchip{padding:10px 16px;border-radius:16px;border:3px solid var(--line);background:#fff;box-shadow:0 4px 0 var(--line);font-weight:700;font-size:20px}
+.wchip.sel{border-color:var(--grape);background:#f1ecff;box-shadow:0 4px 0 var(--grape)}
+.pv{text-align:center;font-size:26px;font-weight:800;background:var(--cream);border-radius:16px;padding:10px;margin:4px 0 12px;min-height:58px}
+.pv .gap{color:#bdb6dc}
+
+.ansbox{display:flex;flex-direction:column;gap:12px}
+.eq{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+.eq .op{font:700 38px/1 var(--f-num);color:var(--ink)}
+.eq .tok{font-size:40px}
+.eq .tok .fr{font-size:40px}
+.eq .tok .mx{font-size:38px}
+.eq .gapx{width:18px}
+.fld{display:flex;flex-direction:column;align-items:center;gap:6px}
+.fin{display:flex;align-items:center;gap:8px}
+.ffr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.fbar{width:100%;min-width:64px;height:5px;border-radius:3px;background:var(--ink)}
+.slot{width:64px;height:56px;border-radius:14px;border:3px dashed #b9b2dc;background:#faf8ff;font:700 32px/1 var(--f-num);display:grid;place-items:center;color:var(--ink)}
+.slot.big{height:78px;font-size:42px}
+.slot.act{border:3px solid var(--grape);background:#fff;box-shadow:0 0 0 5px rgba(123,92,255,.2)}
+.slot.fixed{border:0;background:none}
+.slot.bad{border-color:var(--coral);background:#fff3f0}
+.flbl{font-size:15px;color:var(--soft);font-weight:700}
+.kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:330px;width:100%;margin:0 auto}
+.kp button{height:52px;border-radius:16px;background:#fff;box-shadow:0 4px 0 var(--line),inset 0 0 0 2px var(--line);font:700 26px/1 var(--f-num)}
+.kp button.fn{font:700 18px/1 var(--f-ui);background:var(--cream)}
+.kp button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line),inset 0 0 0 2px var(--line)}
+.pcount{text-align:center;font-size:20px;font-weight:700;color:var(--soft)}
+.pcount b{color:var(--ink);font-size:26px}
+.row2{display:flex;gap:10px}
+.row2 .btn{flex:1}
+@media (max-height:520px){.kp button{height:42px;font-size:22px}.slot{height:46px;width:56px;font-size:27px}.slot.big{height:62px}.opt{min-height:58px}.eq .tok,.eq .tok .fr{font-size:32px}}
+
+.fb{margin-top:14px;border-radius:20px;padding:12px 16px;display:flex;gap:12px;align-items:flex-start;font-size:19px;line-height:1.55;animation:fade .25s both}
+.fb.good{background:var(--okBg)}
+.fb.bad{background:var(--badBg)}
+.fb .fe{font-size:34px;line-height:1;flex:none}
+.fb .ft{flex:1;min-width:0}
+.fb .ft .fr{font-size:.95em}
+.fb .fv{margin-top:8px;max-width:440px}
+.fb .fv svg{width:100%;height:auto}
+.qfoot{margin-top:14px;display:flex;justify-content:center}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+.mbig{font-size:64px;line-height:1.1}
+.mcard h2{margin:6px 0 6px;font-size:28px}
+.mcard p{margin:6px 0;font-size:19px}
+.mcard .fr{font-size:.95em}
+.mbtns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:18px}
+.mbtns .btn{flex:1 1 170px}
+.rstars{display:flex;justify-content:center;gap:8px;font-size:52px;line-height:1;margin:6px 0}
+.rstars span{filter:grayscale(1);opacity:.25;animation:starIn .5s cubic-bezier(.3,1.8,.5,1) both}
+.rstars span.on{filter:none;opacity:1}
+@keyframes starIn{from{transform:scale(0) rotate(-90deg)}}
+.review{text-align:start;background:var(--cream);border-radius:18px;padding:12px 16px;margin-top:12px;font-size:17px}
+.review ul{margin:6px 0 0;padding-inline-start:20px}
+.review li{margin:4px 0}
+.howto{list-style:none;padding:0;margin:12px 0 0;text-align:start;display:grid;gap:10px}
+.howto li{display:flex;align-items:center;gap:12px;font-size:18px;background:var(--cream);border-radius:16px;padding:8px 12px}
+.howto .k{flex:none;min-width:58px;text-align:center;font-size:22px;font-weight:800}
+.pzline{background:#fff6dc;border-radius:16px;padding:10px 14px;margin-top:10px;font-size:19px}
+
+/* svg drawings */
+svg.vis{display:block;margin:0 auto;overflow:visible}
+.pt{fill:#fff;stroke:#2c2850;stroke-width:2.2}
+.pt.on{fill:var(--fill)}
+.pt.gone{fill:#f3f0fb;stroke-dasharray:6 5;stroke-width:1.8}
+.pt.tap{cursor:pointer}
+@media (hover:hover){.pt.tap:hover{fill:#ffe3d6}.pt.tap.on:hover{fill:var(--fill)}}
+.outl{fill:none;stroke:#2c2850;stroke-width:3.4}
+svg.pz .pt.on{fill:#ffd166}
+svg.pz .outl{stroke:#c57b2f;stroke-width:8}
+.pep{fill:#e4572e;pointer-events:none}
+.ptl{font:700 15px var(--f-num);fill:#2c2850;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.cap{font:700 16px var(--f-ui);fill:#2c2850;text-anchor:middle;dominant-baseline:central}
+.sfr text{font-family:var(--f-num);font-weight:700;fill:#2c2850;text-anchor:middle;dominant-baseline:central}
+.sfr line{stroke:#2c2850;stroke-width:2.4;stroke-linecap:round}
+.wlb{font:700 15px var(--f-ui);fill:#2c2850;dominant-baseline:central}
+.dash{stroke:#2c2850;stroke-width:2.6;stroke-dasharray:7 5}
+
+/* shop */
+.shopgrid{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr);gap:18px;align-items:start;margin-top:12px}
+@media (max-width:640px){.shopgrid{grid-template-columns:minmax(0,1fr)}.preview{max-width:220px;margin:0 auto;width:100%}}
+.preview{min-height:200px;background:linear-gradient(180deg,#bfe7ff,#e8f8ff 70%,#9be08a 70.5%,#7cc96b);border-radius:26px;aspect-ratio:1;overflow:hidden;box-shadow:inset 0 0 0 3px var(--line)}
+.preview canvas{width:100%;height:100%;display:block}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tab{flex:1;padding:10px 6px;border-radius:16px;background:var(--cream);font-weight:800;font-size:18px;box-shadow:0 4px 0 var(--line)}
+.tab.on{background:var(--grape);color:#fff;box-shadow:0 4px 0 var(--grapeD)}
+.shopmsg{color:var(--soft);font-weight:600;min-height:28px;margin-bottom:10px}
+.shopmsg .fr{font-size:.95em}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:12px}
+.item{background:#fff;border:3px solid var(--line);border-radius:20px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 5px 0 var(--line);font-weight:700;font-size:17px}
+.item:active{transform:translateY(3px);box-shadow:0 2px 0 var(--line)}
+.item .ie{font-size:38px;line-height:1;height:46px;display:grid;place-items:center}
+.item .sw{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 0 0 3px var(--ink)}
+.item .ip{font-size:15px;color:var(--soft);font-weight:600}
+.item.eq{border-color:var(--ok);background:var(--okBg)}
+.item.eq .ip{color:#0c7a47}
+.item.ask{border-color:var(--sun);background:#fff8e1;box-shadow:0 5px 0 var(--sunD)}
+
+/* lab */
+.labgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.labgrid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--cream);border-radius:24px;padding:16px}
+.seg{display:flex;gap:6px;background:#fff;border-radius:16px;padding:4px;margin-bottom:12px}
+.seg button{flex:1;padding:8px 12px;border-radius:12px;font-weight:700}
+.seg button.on{background:var(--ink);color:#fff}
+.labvis{min-height:160px;display:grid;place-items:center}
+.labvis svg{width:100%;height:auto;max-height:46vh}
+.ctrl{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:4px 0 12px}
+.ctrl .lbl{font-weight:800;font-size:19px}
+.ctrl .lbl small{display:block;color:var(--soft);font-weight:500;font-size:14px}
+.stepper{display:flex;align-items:center;gap:8px;direction:ltr}
+.stepper button{width:48px;height:48px;border-radius:14px;background:#fff;box-shadow:0 4px 0 var(--line);font:700 28px/1 var(--f-num)}
+.stepper button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.stepper output{min-width:48px;text-align:center;font:700 32px/1 var(--f-num)}
+.readout{text-align:center;background:#fff;border-radius:20px;padding:14px}
+.eqline{display:flex;align-items:center;justify-content:center;gap:12px;direction:ltr;font-size:54px;flex-wrap:wrap}
+.eqline .op{font:700 40px var(--f-num)}
+.say2{font-size:21px;font-weight:700;margin-top:8px}
+.lpill{display:inline-block;border-radius:999px;padding:4px 16px;font-weight:800;font-size:17px;margin-top:10px;color:#fff}
+.rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.rule{background:#fff;border:3px solid var(--line);border-radius:22px;padding:12px 14px}
+.rule h4{margin:0 0 4px;font-size:19px}
+.rule p{margin:0 0 8px;font-size:16px;line-height:1.55}
+.rule .fr{font-size:.95em}
+.rule svg{width:100%;height:auto;max-height:120px}
+.names{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:17px}
+.names td{background:#fff;padding:7px 12px}
+.names td:first-child{border-radius:0 12px 12px 0}
+.names td:last-child{border-radius:12px 0 0 12px}
+.names .fr{font-size:15px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="world" aria-hidden="true"></canvas>
+
+  <div id="hud" hidden>
+    <div class="hgrp">
+      <div class="hpill" aria-label="לבבות"><span id="hudHearts"></span></div>
+      <div class="hpill" id="hudPz" aria-label="פיצות"></div>
+    </div>
+    <div class="hgrp">
+      <div class="hpill" id="hudStage"></div>
+      <button class="hbtn" id="btnSound" type="button" aria-label="צליל">🔊</button>
+      <button class="hbtn" id="btnPause" type="button" aria-label="הפסקה">✕</button>
+    </div>
+  </div>
+
+  <div id="pad" hidden>
+    <button class="pb" id="bL" type="button" aria-label="שמאלה"><svg viewBox="0 0 40 40"><path d="M25 8 L12 20 L25 32"/></svg></button>
+    <button class="pb" id="bR" type="button" aria-label="ימינה"><svg viewBox="0 0 40 40"><path d="M15 8 L28 20 L15 32"/></svg></button>
+    <button class="pb" id="bJ" type="button" aria-label="קפיצה"><svg viewBox="0 0 40 40"><path d="M9 7 H31 M20 34 V15 M11 23 L20 14 L29 23"/></svg></button>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+
+  <section class="screen on" id="scHome">
+    <div class="wrap"><div class="card home">
+      <div class="hero"><span id="logoBox"></span><canvas id="homeChar" width="192" height="192"></canvas></div>
+      <h1 class="title"><span class="t1">מסע</span> <span class="t2" id="t2">השברים</span></h1>
+      <p class="tag">רצים, קופצים ופותרים • הכנה לבוחן בשברים • כיתה ד׳</p>
+      <div class="menu">
+        <button class="btn sun big" id="goPlay" type="button">▶ יוצאים לדרך</button>
+        <button class="btn grape" id="goLab" type="button">🔬 מעבדת השברים</button>
+        <button class="btn sky" id="goShop" type="button">🛒 חנות</button>
+      </div>
+      <div class="wallet" id="homeWallet"></div>
+    </div></div>
+  </section>
+
+  <section class="screen" id="scTopics">
+    <div class="wrap"><div class="card wide">
+      <div class="sbar"><button class="back" data-go="scHome" type="button">→ חזרה</button><h2>בחרי נושא</h2><div class="wallet sm" id="topWallet"></div></div>
+      <p class="lead">כל נושא מהבוחן הוא מסע של 3 עולמות: קל, בינוני וקשה. ⭐⭐⭐ = מוכנה לנושא!</p>
+      <div class="tgrid" id="tgrid"></div>
+    </div></div>
+  </section>
+
+  <section class="screen" id="scShop">
+    <div class="wrap"><div class="card wide">
+      <div class="sbar"><button class="back" data-go="scHome" type="button">→ חזרה</button><h2>🛒 החנות</h2><div class="wallet sm" id="shopWallet"></div></div>
+      <div class="shopgrid">
+        <div class="preview"><canvas id="shopChar" width="400" height="400"></canvas></div>
+        <div>
+          <div class="tabs" id="shopTabs"><button type="button" data-t="color" class="tab on">🎨 צבעים</button><button type="button" data-t="hat" class="tab">🎩 כובעים</button><button type="button" data-t="trail" class="tab">✨ שובלים</button></div>
+          <div class="shopmsg" id="shopMsg"></div>
+          <div class="items" id="shopItems"></div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="screen" id="scLab">
+    <div class="wrap"><div class="card wide">
+      <div class="sbar"><button class="back" data-go="scHome" type="button">→ חזרה</button><h2>🔬 מעבדת השברים</h2></div>
+      <p class="lead">משנים את המכנה ואת המונה ורואים מה קורה. אפשר גם ללחוץ על החלקים עצמם.</p>
+      <div class="labgrid">
+        <div class="panel">
+          <div class="seg" id="labShape"><button type="button" data-s="bar" class="on">מקלות</button><button type="button" data-s="circle">עיגולים</button></div>
+          <div class="labvis" id="labVis"></div>
+        </div>
+        <div class="panel">
+          <div class="ctrl"><div class="lbl">המכנה (למטה)<small>לכמה חלקים שווים מחלקים כל שלם</small></div><div class="stepper"><button type="button" data-k="d" data-v="-1" aria-label="פחות">−</button><output id="labD"></output><button type="button" data-k="d" data-v="1" aria-label="יותר">+</button></div></div>
+          <div class="ctrl"><div class="lbl">המונה (למעלה)<small>כמה חלקים צבועים</small></div><div class="stepper"><button type="button" data-k="n" data-v="-1" aria-label="פחות">−</button><output id="labN"></output><button type="button" data-k="n" data-v="1" aria-label="יותר">+</button></div></div>
+          <div class="readout" id="labOut"></div>
+        </div>
+      </div>
+      <h3 class="sec">⭐ כללי זהב לבוחן</h3>
+      <div class="rules" id="rules"></div>
+      <h3 class="sec">📖 איך קוראים לחלקים?</h3>
+      <table class="names" id="names"></table>
+    </div></div>
+  </section>
+
+  <div class="modal" id="qm" hidden>
+    <div class="qcard" id="qCard" role="dialog" aria-modal="true" aria-labelledby="qTitle">
+      <div class="qhead"><span class="badge" id="qGate"></span><span class="qtry" id="qTry"></span></div>
+      <h2 class="qtitle" id="qTitle"></h2>
+      <p class="qsub" id="qSub" hidden></p>
+      <div class="qbody" id="qBody"><div class="qvis" id="qVis"></div><div class="qans" id="qAns"></div></div>
+      <div class="fb" id="qFb" hidden></div>
+      <div class="qfoot" id="qFoot"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="mm" hidden><div class="mcard" id="mmCard" role="dialog" aria-modal="true"></div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============ utilities ============ */
+const $=(s,el=document)=>el.querySelector(s), $$=(s,el=document)=>Array.from(el.querySelectorAll(s));
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r;};
+const R={int:(a,b)=>a+Math.floor(Math.random()*(b-a+1)),pick:a=>a[Math.floor(Math.random()*a.length)],chance:p=>Math.random()<p,
+  shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}};
+const same=(a,b,c,d)=>b>0&&d>0&&a*d===b*c;
+const randSet=(d,k)=>new Set(R.shuffle(range(0,d-1)).slice(0,k));
+const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
+let UID=0;
+
+/* ============ fractions as text ============ */
+const F=(n,d)=>`<span class="fr" dir="ltr"><span class="fn">${n}</span><span class="fd">${d}</span></span>`;
+const MX=(w,n,d)=>`<span class="mx" dir="ltr"><span class="mw">${w}</span>${F(n,d)}</span>`;
+const num=x=>`<span class="nm">${x}</span>`;
+const sumEq=(arr,tot)=>`<span class="ltr nm">${arr.join(' + ')} = ${tot}</span>`;
+const EQ=(...xs)=>`<span class="ltr">${xs.join(' = ')}</span>`;
+
+/* ============ Hebrew number words ============ */
+const NF=['אפס','אחת','שתיים','שלוש','ארבע','חמש','שש','שבע','שמונה','תשע','עשר','אחת־עשרה','שתים־עשרה','שלוש־עשרה','ארבע־עשרה','חמש־עשרה','שש־עשרה','שבע־עשרה','שמונה־עשרה','תשע־עשרה','עשרים'];
+const NM=['אפס','אחד','שניים','שלושה','ארבעה','חמישה','שישה','שבעה','שמונה','תשעה','עשרה','אחד־עשר','שנים־עשר','שלושה־עשר','ארבעה־עשר','חמישה־עשר','שישה־עשר','שבעה־עשר','שמונה־עשר','תשעה־עשר','עשרים'];
+const DEN={2:{s:'חצי',p:'חצאים',g:'m'},3:{s:'שליש',p:'שלישים',g:'m'},4:{s:'רבע',p:'רבעים',g:'m'},5:{s:'חמישית',p:'חמישיות',g:'f'},6:{s:'שישית',p:'שישיות',g:'f'},7:{s:'שביעית',p:'שביעיות',g:'f'},8:{s:'שמינית',p:'שמיניות',g:'f'},9:{s:'תשיעית',p:'תשיעיות',g:'f'},10:{s:'עשירית',p:'עשיריות',g:'f'}};
+const numWord=(n,g)=>n===2?(g==='f'?'שתי':'שני'):(g==='f'?NF:NM)[n];
+const fw=(n,d)=>{const D=DEN[d];if(!D||n<1||n>20)return null;return n===1?D.s:`${numWord(n,D.g)} ${D.p}`;};
+const chalki=(n,d)=>`${NF[n]} חלקי ${NF[d]}`;
+const mw=(w,n,d)=>`${w===1?'שלם אחד':numWord(w,'m')+' שלמים'} ו${fw(n,d)}`;
+const SHAPE={bar:{one:'מקל',the:'המקל',many:'מקלות'},circle:{one:'עיגול',the:'העיגול',many:'עיגולים'},grid:{one:'ריבוע',the:'הריבוע',many:'ריבועים'}};
+
+/* ============ SVG drawings of fractions ============ */
+const INK='#2c2850';
+const polar=(cx,cy,r,a)=>[cx+r*Math.sin(a*Math.PI/180),cy-r*Math.cos(a*Math.PI/180)];
+function sectorD(cx,cy,r,a0,a1){const[x0,y0]=polar(cx,cy,r,a0),[x1,y1]=polar(cx,cy,r,a1);return `M${cx} ${cy}L${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}Z`;}
+function arcD(cx,cy,r,a0,a1){const[x0,y0]=polar(cx,cy,r,a0),[x1,y1]=polar(cx,cy,r,a1);return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;}
+function svgFr(x,y,n,d,size=17){const lw=Math.max(String(n).length,String(d).length)*size*.62+8;return `<g class="sfr"><text x="${x}" y="${y-size*.64}" font-size="${size}">${n}</text><line x1="${x-lw/2}" x2="${x+lw/2}" y1="${y}" y2="${y}"/><text x="${x}" y="${y+size*.7}" font-size="${size}">${d}</text></g>`;}
+function capSvg(cap,x,y){if(cap==null)return '';if(typeof cap==='object')return svgFr(x,y,cap.n,cap.d);return `<text class="cap" x="${x}" y="${y}">${cap}</text>`;}
+
+function svgShapes(o){
+  const id='s'+(++UID),shape=o.shape||'bar',d=o.d,W=o.wholes||1;
+  const isOn=gi=>o.filled instanceof Set?o.filled.has(gi):gi<(o.filled||0);
+  const isGone=gi=>o.gone instanceof Set&&o.gone.has(gi);
+  const cls=gi=>'pt'+(isOn(gi)?' on':'')+(isGone(gi)?' gone':'')+(o.interactive?' tap':'');
+  let defs='',body='',over='',vbW,vbH,cnt=0;const labels=[];
+  if(shape==='bar'){
+    const BW=o.bw||300,BH=o.bh||42,GAP=o.gap||14,pad=5,capW=o.caps?70:0;
+    vbW=BW+capW+pad*2;vbH=W*BH+(W-1)*GAP+pad*2;
+    for(let w=0;w<W;w++){
+      const x0=pad+capW,y=pad+w*(BH+GAP);let acc=0;
+      defs+=`<clipPath id="${id}c${w}"><rect x="${x0}" y="${y}" width="${BW}" height="${BH}" rx="10"/></clipPath>`;
+      body+=`<g clip-path="url(#${id}c${w})">`;
+      for(let i=0;i<d;i++){
+        const gi=w*d+i,pw=o.unequal?o.unequal[i]*BW:BW/d;
+        body+=`<rect class="${cls(gi)}" data-i="${gi}" x="${(x0+acc).toFixed(2)}" y="${y}" width="${pw.toFixed(2)}" height="${BH}"/>`;
+        if(o.labels==='count'&&isOn(gi))labels.push([x0+acc+pw/2,y+BH/2,++cnt]);
+        acc+=pw;
+      }
+      body+=`</g><rect class="outl" x="${x0}" y="${y}" width="${BW}" height="${BH}" rx="10"/>`;
+      if(o.caps)over+=capSvg(o.caps[w],pad+capW/2-4,y+BH/2);
+    }
+  }else if(shape==='circle'){
+    const r=o.r||52,GAP=o.gap||20,pad=7,capH=o.caps?46:0,per=Math.min(W,o.perRow||4),rows=Math.ceil(W/per);
+    vbW=per*2*r+(per-1)*GAP+pad*2;vbH=rows*(2*r+capH)+(rows-1)*GAP+pad*2;
+    for(let w=0;w<W;w++){
+      const row=Math.floor(w/per),col=w%per,cx=pad+r+col*(2*r+GAP),cy=pad+r+row*(2*r+capH+GAP);
+      for(let i=0;i<d;i++){
+        const gi=w*d+i,a=(i+.5)*360/d;
+        body+=d===1?`<circle class="${cls(gi)}" data-i="${gi}" cx="${cx}" cy="${cy}" r="${r}"/>`:`<path class="${cls(gi)}" data-i="${gi}" d="${sectorD(cx,cy,r,i*360/d,(i+1)*360/d)}"/>`;
+        if(o.labels==='count'&&isOn(gi)){const p=polar(cx,cy,d===1?0:r*.6,a);labels.push([p[0],p[1],++cnt]);}
+        if(o.pizza&&isOn(gi)&&!isGone(gi)){const p=polar(cx,cy,r*.62,a);over+=`<circle class="pep" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${Math.max(3,r*.1).toFixed(1)}"/>`;}
+      }
+      body+=`<circle class="outl" cx="${cx}" cy="${cy}" r="${r}"/>`;
+      if(o.caps)over+=capSvg(o.caps[w],cx,cy+r+capH/2+2);
+    }
+  }else{
+    const rows=o.rows,cols=o.cols,cell=o.cell||50,pad=5;
+    vbW=cols*cell+pad*2;vbH=rows*cell+pad*2;
+    for(let ri=0;ri<rows;ri++)for(let ci=0;ci<cols;ci++){
+      const gi=ri*cols+ci;
+      body+=`<rect class="${cls(gi)}" data-i="${gi}" x="${pad+ci*cell}" y="${pad+ri*cell}" width="${cell}" height="${cell}"/>`;
+      if(o.labels==='count'&&isOn(gi))labels.push([pad+ci*cell+cell/2,pad+ri*cell+cell/2,++cnt]);
+    }
+    body+=`<rect class="outl" x="${pad}" y="${pad}" width="${cols*cell}" height="${rows*cell}" rx="4"/>`;
+  }
+  const lab=labels.map(([x,y,t])=>`<text class="ptl" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${t}</text>`).join('');
+  const mw_=o.maxw||Math.round(vbW*1.5);
+  return `<svg class="vis${o.pizza?' pz':''}${o.interactive?' paint':''}" viewBox="0 0 ${vbW} ${vbH}" style="direction:ltr;max-width:${mw_}px" role="img">${defs?'<defs>'+defs+'</defs>':''}${body}${lab}${over}</svg>`;
+}
+const WALL_C={1:'#ffd166',2:'#ff8a5c',3:'#ff9fc6',4:'#7bdcb5',5:'#b8a6ff',6:'#ffb3d1',8:'#8ecbff',10:'#c3a6ff'};
+function svgWall(o){
+  const BW=320,BH=34,GAP=8,pad=5,labW=82,rows=o.rows,id='w'+(++UID);
+  const vbW=BW+labW+pad*2,vbH=rows.length*BH+(rows.length-1)*GAP+pad*2;let s='';
+  rows.forEach((den,r)=>{
+    const y=pad+r*(BH+GAP),x0=pad,k=(o.hl&&o.hl[den])||0;
+    s+=`<clipPath id="${id}${r}"><rect x="${x0}" y="${y}" width="${BW}" height="${BH}" rx="9"/></clipPath><g clip-path="url(#${id}${r})">`;
+    for(let i=0;i<den;i++)s+=`<rect x="${(x0+i*BW/den).toFixed(2)}" y="${y}" width="${(BW/den).toFixed(2)}" height="${BH}" fill="${i<k?(WALL_C[den]||'#ffd166'):'#fff'}" stroke="${INK}" stroke-width="2"/>`;
+    s+=`</g><rect class="outl" x="${x0}" y="${y}" width="${BW}" height="${BH}" rx="9"/><text class="wlb" x="${x0+BW+10}" y="${y+BH/2}">${den===1?'שלם':DEN[den].p}</text>`;
+  });
+  if(o.line!=null){const x=(pad+BW*o.line).toFixed(1);s+=`<line class="dash" x1="${x}" x2="${x}" y1="1" y2="${vbH-1}"/>`;}
+  return `<svg class="vis" viewBox="0 0 ${vbW} ${vbH}" style="direction:ltr;max-width:560px" role="img">${s}</svg>`;
+}
+function pieSVG(k,n=8,size=30){
+  let s='';for(let i=0;i<n;i++)s+=`<path d="${sectorD(16,16,13,i*360/n,(i+1)*360/n)}" fill="${i<k?'#ffd166':'#fff'}" stroke="${INK}" stroke-width="1.5"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true">${s}<circle cx="16" cy="16" r="13" fill="none" stroke="#c57b2f" stroke-width="3"/></svg>`;
+}
+function pizzaLogo(){
+  let s='';const cx=60,cy=60,r=48;
+  for(let i=0;i<8;i++){
+    const off=i===1?13:0,[dx,dy]=polar(0,0,off,(i+.5)*45),p=polar(cx,cy,r*.6,(i+.5)*45);
+    s+=`<g transform="translate(${dx.toFixed(1)} ${dy.toFixed(1)})"><path d="${sectorD(cx,cy,r,i*45,(i+1)*45)}" fill="#ffd166" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/><path d="${arcD(cx,cy,r-3,i*45+2,(i+1)*45-2)}" fill="none" stroke="#c57b2f" stroke-width="7" stroke-linecap="round"/><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="5.5" fill="#e4572e"/></g>`;
+  }
+  return `<svg class="logo" viewBox="-4 -14 134 134" aria-hidden="true">${s}</svg>`;
+}
+
+/* ============ answer-option helper ============ */
+function opts(correct,wrongs,want=3){
+  const out=[Object.assign({},correct,{correct:true})],seen=new Set([correct.html]);
+  for(const w of wrongs){
+    if(out.length>=want+1)break;
+    if(!w||!w.html||seen.has(w.html))continue;
+    if(correct.v&&w.v&&same(correct.v[0],correct.v[1],w.v[0],w.v[1]))continue;
+    seen.add(w.html);out.push(Object.assign({},w,{correct:false}));
+  }
+  return R.shuffle(out);
+}
+
+/* ============ diagnosis helpers (what exactly went wrong) ============ */
+function diagFrac(n,d,K,D,what){
+  if(!(d>0))return 'המכנה לא יכול להיות 0.';
+  if(same(n,d,K,D))return null;
+  if(n===D&&d===K)return 'הפכת את המונה והמכנה! המכנה (למטה) = מספר כל החלקים.';
+  if(d!==D&&(d===K||d===D-K))return 'המכנה הוא מספר <b>כל</b> החלקים יחד – לא רק חלק מהם.';
+  if(d!==D)return 'המכנה = לכמה חלקים שווים מחולקת הצורה. ספרי את כל החלקים.';
+  return `המכנה נכון 👍 עכשיו ספרי שוב כמה חלקים ${what}.`;
+}
+function diagMixed(W,n,d,p){
+  const sh=SHAPE[p.shape];
+  if(!(d>0))return 'המכנה לא יכול להיות 0.';
+  if(W===p.w&&n===p.k&&d===p.d)return null;
+  if(n>=1&&n<d&&same(W*d+n,d,p.tot,p.d))return null;
+  if(d===p.d*(p.w+1)||d===p.tot)return `המכנה = לכמה חלקים מחולק ${sh.one} <b>אחד</b>. לא סופרים את החלקים בכל ה${sh.many}.`;
+  if(d!==p.d)return `המכנה = לכמה חלקים מחולק כל ${sh.one}. ספרי חלקים ב${sh.one} אחד בלבד.`;
+  if(n>=d)return 'במספר מעורב השבר קטן מ־1: המונה קטן מהמכנה.';
+  if(W!==p.w)return `השלם = כמה ${sh.many} מלאים לגמרי יש. ספרי רק אותם.`;
+  if(n===p.d-p.k)return `ספרת את החלקים הלבנים. כמה חלקים <b>צבועים</b> ב${sh.one} האחרון?`;
+  return `כמה חלקים צבועים ב${sh.one} שלא מלא?`;
+}
+function diagImp(n,d,p){
+  const sh=SHAPE[p.shape];
+  if(!(d>0))return 'המכנה לא יכול להיות 0.';
+  if(same(n,d,p.tot,p.d))return null;
+  if(n===p.w*10+p.k)return 'הצמדת את מספר השלמים למספר החלקים. צריך לספור את <b>כל</b> החלקים הצבועים – גם בשלמים.';
+  if(d!==p.d)return `המכנה = לכמה חלקים מחולק ${sh.one} אחד.`;
+  if(n===p.k)return `ספרת רק את ה${sh.one} האחרון. גם ב${sh.many} המלאים יש חלקים צבועים!`;
+  if(n===p.w+p.k)return `כל ${sh.one} מלא הוא ${p.d} חלקים – לא חלק אחד.`;
+  return 'ספרי שוב את כל החלקים הצבועים.';
+}
+
+/* ============ question generators ============ */
+const G={};
+const pick2nd=(n,d)=>n+1<d?n+1:Math.max(1,n-1);
+
+/* ---- 1: numerator & denominator ---- */
+G.t1_concept=diff=>{
+  const d=R.int(4,9),n=R.int(1,d-1),kind=R.pick(['den','num','denN','numN']);
+  const visual=svgShapes({shape:'bar',d,filled:n});
+  const explain=`ב־${F(n,d)}: המונה ${num(n)} (למעלה) = כמה חלקים לקחנו. המכנה ${num(d)} (למטה) = לכמה חלקים שווים חילקנו את השלם.`;
+  if(kind==='den'||kind==='num'){
+    const isDen=kind==='den',A='לכמה חלקים שווים חילקו את השלם',B='כמה חלקים צבעו (לקחו)',c=isDen?A:B;
+    return {skill:'nd',type:'mc',layout:'list',title:`בשבר ${F(n,d)} – מה אומר ${isDen?'המכנה':'המונה'} ${num(isDen?d:n)}?`,visual,
+      options:opts({html:c},[{html:isDen?B:A,why:isDen?'זה מה שאומר המונה – המספר שלמעלה.':'זה מה שאומר המכנה – המספר שלמטה.'},{html:'כמה חלקים נשארו לבנים',why:'את החלקים הלבנים לא כותבים בשבר הזה.'},{html:'כמה שלמים יש',why:'השבר הזה מתאר חלק משלם אחד.'}]),
+      hint:'המונה למעלה, המכנה למטה.',explain,reveal:c};
+  }
+  const isDen=kind==='denN',c=isDen?d:n,o=isDen?n:d;
+  const whyGen=isDen?'המכנה הוא המספר שלמטה.':'המונה הוא המספר שלמעלה.';
+  return {skill:'nd',type:'mc',layout:'grid',title:`מה ${isDen?'המכנה':'המונה'} בשבר ${F(n,d)}?`,visual,
+    options:opts({html:num(c),v:[c,1]},[{html:num(o),v:[o,1],why:isDen?'זה המונה – הוא למעלה. '+whyGen:'זה המכנה – הוא למטה. '+whyGen},{html:num(n+d),v:[n+d,1],why:'לא מחברים את המספרים. '+whyGen},{html:num(c+1),v:[c+1,1],why:whyGen},{html:num(c+2),v:[c+2,1],why:whyGen}]),
+    hint:whyGen,explain,reveal:num(c)};
+};
+G.t1_pic=diff=>{
+  let shape,d,rows,cols;
+  if(diff===2||(diff===1&&R.chance(.4))){[rows,cols]=R.pick([[3,3],[3,4],[4,4],[2,5],[2,4],[2,3]]);d=rows*cols;shape='grid';}
+  else{shape=R.pick(['bar','circle']);d=diff===0?R.int(3,8):R.int(4,10);}
+  let k;do{k=R.int(1,d-1);}while(2*k===d);
+  const sh=SHAPE[shape];
+  return {skill:'nd',type:'mc',layout:'grid',title:'איזה שבר מתאר את החלק הצבוע?',
+    visual:svgShapes({shape,d,filled:shape==='grid'?randSet(d,k):k,rows,cols}),
+    options:opts({html:F(k,d),v:[k,d]},[
+      {html:F(d,k),v:[d,k],why:'הפוך! המכנה (למטה) הוא מספר כל החלקים.'},
+      {html:F(d-k,d),v:[d-k,d],why:'זה החלק הלבן – החלק שאינו צבוע.'},
+      {html:F(k,d-k),v:[k,d-k],why:'המכנה הוא מספר כל החלקים יחד – הצבועים והלבנים.'},
+      {html:F(k,d+1),v:[k,d+1],why:'ספרי שוב את כל החלקים.'}]),
+    hint:`לכמה חלקים שווים מחולק ${sh.the}? זה המכנה, והוא נכתב למטה.`,
+    explain:`${sh.the} מחולק ל־${d} חלקים שווים ← המכנה ${d}. צבועים ${k} ← המונה ${k}. השבר: ${F(k,d)}`,reveal:F(k,d)};
+};
+function unequalWidths(d){let w;do{w=Array.from({length:d},()=>R.int(4,20));}while(Math.max(...w)<Math.min(...w)*2.2);const s=w.reduce((a,b)=>a+b,0);return w.map(x=>x/s);}
+G.t1_equal=diff=>{
+  const d=R.pick([3,4,5,6]),k=diff===0?1:R.int(1,d-1),k2=d-k!==k?d-k:(k+1<d?k+1:k-1);
+  const pic=o=>svgShapes(Object.assign({shape:'bar',bw:240,bh:40,maxw:300},o));
+  return {skill:'nd',type:'mc',layout:'pics',title:`באיזה ציור החלק הצבוע הוא ${F(k,d)}?`,
+    options:opts({html:pic({d,filled:k})},[
+      {html:pic({d,filled:k,unequal:unequalWidths(d)}),why:'כאן החלקים לא שווים בגודלם! בשבר כל החלקים שווים.'},
+      {html:pic({d:d+1,filled:k}),why:`כאן המקל מחולק ל־${d+1} חלקים – זה ${F(k,d+1)}.`},
+      {html:pic({d,filled:k2}),why:`כאן צבועים ${k2} חלקים – זה ${F(k2,d)}.`}]),
+    hint:'בדקי שני דברים: לכמה חלקים מחולק המקל, והאם כל החלקים שווים בגודלם.',
+    explain:`ב־${F(k,d)} המקל מחולק ל־${d} חלקים <b>שווים</b>, וצבועים ${k} מהם.`,reveal:''};
+};
+G.t1_paint=diff=>{
+  const shape=diff===0?'bar':R.pick(['bar','circle']),d=diff===0?R.int(3,6):R.int(4,diff===2?10:8),k=R.int(1,d-1),sh=SHAPE[shape];
+  return {skill:'nd',type:'paint',title:`צבעי ${F(k,d)} מ${sh.the}`,sub:'לחצי על החלקים כדי לצבוע אותם.',
+    paint:{shape,d,wholes:1},target:k,
+    check:c=>c===k?null:(c>k?`צבעת ${c} חלקים – יותר מדי. המונה הוא ${k}.`:`צבעת ${c} ${c===1?'חלק':'חלקים'}. המונה הוא ${k}, אז צובעים ${k} חלקים.`),
+    hint:'המונה (למעלה) אומר כמה חלקים לצבוע.',
+    explain:`${sh.the} מחולק ל־${d} חלקים (המכנה), וצובעים ${k} מהם (המונה).`,reveal:`צובעים ${k} חלקים מתוך ${d}.`};
+};
+G.t1_two=diff=>{
+  let shape,d,rows,cols;
+  if(diff===2){[rows,cols]=R.pick([[3,3],[4,4],[3,4],[2,5]]);d=rows*cols;shape='grid';}
+  else{shape=R.pick(['circle','bar','grid']);if(shape==='grid'){[rows,cols]=R.pick([[2,3],[2,4],[3,3]]);d=rows*cols;}else d=R.int(4,9);}
+  let k;do{k=R.int(1,d-1);}while(2*k===d);
+  return {skill:'nd',type:'input',title:'כתבי שבר לחלק הצבוע ושבר לחלק שאינו צבוע.',
+    visual:svgShapes({shape,d,filled:shape==='grid'?randSet(d,k):k,rows,cols}),
+    fields:[{kind:'frac',label:'החלק הצבוע'},{kind:'frac',label:'החלק שאינו צבוע'}],eq:[{t:'f',i:0},{t:'gap'},{t:'f',i:1}],eqDir:'rtl',
+    check:v=>{const m1=diagFrac(v[0].n,v[0].d,k,d,'צבועים');if(m1)return {msg:'בחלק הצבוע: '+m1,bad:[0]};const m2=diagFrac(v[1].n,v[1].d,d-k,d,'לבנים');if(m2)return {msg:'בחלק שאינו צבוע: '+m2,bad:[1]};return null;},
+    hint:'בשני השברים המכנה הוא מספר כל החלקים. המונה – פעם הצבועים ופעם הלבנים.',
+    explain:`יש ${d} חלקים בסך הכול ← המכנה ${d}. צבועים ${k} ← ${F(k,d)}. לבנים ${d-k} ← ${F(d-k,d)}.`,reveal:`${F(k,d)} ו־${F(d-k,d)}`,
+    ans:[{n:k,d},{n:d-k,d}],wrongs:[[{n:d,d:k},{n:d-k,d}],[{n:k,d},{n:d,d:d-k}],[{n:d-k,d:k},{n:k,d:d-k}]]};
+};
+G.t1_multi=diff=>{
+  const mode=R.pick(['n','d']),t=R.int(3,5),good=[],trap=[],other=[];
+  if(mode==='n'){R.shuffle(range(t+1,9)).slice(0,R.int(2,3)).forEach(d=>good.push([t,d]));R.shuffle(range(1,t-1)).slice(0,2).forEach(n=>trap.push([n,t]));}
+  else{R.shuffle(range(1,t-1)).slice(0,R.int(2,3)).forEach(n=>good.push([n,t]));R.shuffle(range(t+1,9)).slice(0,2).forEach(d=>trap.push([t,d]));}
+  while(good.length+trap.length+other.length<6){const d=R.int(2,9),n=R.int(1,d-1);if(n!==t&&d!==t&&!other.some(f=>f[0]===n&&f[1]===d))other.push([n,d]);}
+  const items=R.shuffle([...good.map(f=>({f,good:true})),...trap.map(f=>({f,good:false})),...other.map(f=>({f,good:false}))]);
+  const what=mode==='n'?'המונה':'המכנה',where=mode==='n'?'למעלה':'למטה';
+  return {skill:'nd',type:'multi',title:`בחרי את <b>כל</b> השברים ש${what} שלהם ${t}`,sub:'אפשר לבחור כמה שברים. בסוף לוחצים "בדיקה".',
+    items:items.map(it=>({html:F(it.f[0],it.f[1]),good:it.good})),
+    hint:`${what} הוא המספר ש${where}.`,explain:`${what} הוא המספר ש${where} – בחרנו את השברים שכתוב בהם ${t} ${where}.`,reveal:''};
+};
+G.t1_pizza=diff=>{
+  const d=R.pick([6,8,8,10,12]);let k;do{k=R.int(2,d-2);}while(2*k===d);
+  const fell=R.chance(.5),K=fell?d-k:k;
+  const title=fell?`בפיצה היו ${d} משולשים שווים. ${k} משולשים נפלו על הרצפה 😮 איזה חלק מהפיצה <b>נשאר</b>?`
+                  :`בפיצה היו ${d} משולשים שווים. אחרי ארוחת הערב נשארו ${d-k} משולשים. איזה חלק מהפיצה <b>אכלו</b>?`;
+  const gone=new Set(range(0,k-1));
+  return {skill:'nd',type:'input',title,visual:svgShapes({shape:'circle',d,filled:new Set(range(k,d-1)),gone,pizza:true,r:72,maxw:260}),
+    fields:[{kind:'frac'}],
+    check:v=>{const a=v[0];if(!(a.d>0))return {msg:'המכנה לא יכול להיות 0.'};if(same(a.n,a.d,K,d))return null;
+      if(same(a.n,a.d,d-K,d))return {msg:fell?'זה החלק שנפל. שאלו כמה <b>נשאר</b>.':'זה החלק שנשאר. שאלו כמה <b>אכלו</b>.'};
+      return {msg:diagFrac(a.n,a.d,K,d,fell?'נשארו':'אכלו')};},
+    hint:`כל הפיצה = ${d} משולשים. זה המכנה.`,explain:`הפיצה מחולקת ל־${d} ← המכנה ${d}. ${fell?'נשארו':'אכלו'} ${K} משולשים ← ${F(K,d)}.`,reveal:F(K,d),
+    ans:[{n:K,d}],wrongs:[[{n:d-K,d}],[{n:d,d:K}]]};
+};
+
+/* ---- 2: fractions in words ---- */
+const T2_FOCUS=[[3,8],[1,2],[4,8],[3,5],[1,9],[6,7],[2,5],[3,4],[2,3],[5,6],[7,10],[1,4]];
+function wordFrac(minN=1){let n,d;do{if(R.chance(.55))[n,d]=R.pick(T2_FOCUS);else{d=R.int(2,10);n=R.int(1,d-1);}}while(n<minN);return [n,d];}
+const confDen=d=>d===8?5:d===5?8:d===9?6:d===6?9:(d<10?d+1:d-1);
+G.t2_half=diff=>{
+  const d=R.pick([2,2,4,3]),names={2:'חצי',3:'שליש',4:'רבע'},c=names[d];
+  const others=['חצי','שליש','רבע','שמינית'].filter(x=>x!==c);
+  return {skill:'words',type:'mc',layout:'grid',title:`איך קוראים לשבר ${F(1,d)}?`,visual:svgShapes({shape:'circle',d,filled:1,r:62,maxw:220}),
+    options:opts({html:c},[{html:`${NF[d]} חלקי אחת`,why:`הפוך! קודם קוראים את המונה (1) ואחר כך את המכנה (${d}).`},...others.map(x=>({html:x,why:`השלם מחולק ל־${d} חלקים – כל חלק הוא ${c}.`}))]),
+    hint:'כמה חלקים יש בשלם? לפי זה קוראים לחלק.',explain:`${F(1,d)} = <b>${c}</b> – חילקנו שלם ל־${d} חלקים ולקחנו חלק אחד.`,reveal:c};
+};
+G.t2_read=diff=>{
+  const [n,d]=wordFrac(),ch=diff>0&&n>=2&&R.chance(.35),say=(a,b)=>ch?chalki(a,b):fw(a,b);
+  const c=say(n,d),d2=confDen(d),n2=pick2nd(n,d);
+  const rev=n===1?`${NF[d]} חלקי אחת`:(ch?chalki(d,n):fw(d,n));
+  return {skill:'words',type:'mc',layout:'list',title:'איך קוראים את השבר?',
+    visual:`<div class="bigfr">${F(n,d)}</div>`+svgShapes({shape:'bar',d,filled:n,bw:260,bh:34,maxw:300}),
+    options:opts({html:c},[{html:rev,why:`הפוך! קודם קוראים את המונה – המספר שלמעלה (${n}).`},{html:say(n,d2),why:`המכנה הוא ${d}, אז החלקים הם ${DEN[d].p}.`},{html:say(n2,d),why:`המונה הוא ${n}.`},{html:say(n,d===10?9:(d===2?3:d-1)),why:`המכנה הוא ${d}.`}]),
+    hint:'קודם המונה (למעלה), ואז שם החלקים לפי המכנה (למטה).',
+    explain:n===1?`${F(1,d)} = <b>${DEN[d].s}</b> – חלק אחד מתוך ${d}.`:ch?`קודם המונה (${n}) ואחר כך המכנה (${d}): <b>${c}</b>. אפשר להגיד גם בשם החלקים: <b>${fw(n,d)}</b>.`:`קודם המונה ${n}, ואז שם החלקים לפי המכנה ${d}: <b>${c}</b>.`,reveal:c};
+};
+G.t2_write=diff=>{
+  const [n,d]=wordFrac(),ch=diff>0&&n>=2&&R.chance(.3),words=ch?chalki(n,d):fw(n,d),d2=confDen(d),n2=pick2nd(n,d);
+  return {skill:'words',type:'mc',layout:'grid',title:`איזה שבר כתוב כאן: <span class="say">${words}</span>?`,
+    options:opts({html:F(n,d),v:[n,d]},[{html:F(d,n),v:[d,n],why:'הפוך! המילה הראשונה היא המונה – הוא נכתב למעלה.'},{html:F(n,d2),v:[n,d2],why:`${DEN[d].p} – זה המכנה ${d}.`},{html:F(n2,d),v:[n2,d],why:`המונה הוא ${n}.`},{html:F(n,d===2?3:d-1),v:[n,d===2?3:d-1],why:`המכנה הוא ${d}.`}]),
+    hint:'המילה הראשונה = המונה (למעלה). שם החלקים = המכנה (למטה).',explain:`<span class="say">${words}</span> = ${F(n,d)}`,reveal:F(n,d)};
+};
+G.t2_unit=diff=>{
+  const d=diff===0?R.pick([2,3,4,8]):R.int(2,10),shape=R.pick(['bar','circle']),sh=SHAPE[shape];
+  const near=[2,3,4,5,6,8,9,10].filter(x=>x!==d).sort((a,b)=>Math.abs(a-d)-Math.abs(b-d)).slice(0,4);
+  return {skill:'words',type:'mc',layout:'grid',title:'איך קוראים לחלק הצבוע?',visual:svgShapes({shape,d,filled:1,...(shape==='circle'?{r:62,maxw:230}:{})}),
+    options:opts({html:DEN[d].s},R.shuffle(near).map(x=>({html:DEN[x].s,why:`ספרי את החלקים: ${sh.the} מחולק ל־${d} חלקים.`}))),
+    hint:`לכמה חלקים מחולק ${sh.the}?`,explain:`${sh.the} מחולק ל־${d} חלקים – כל חלק הוא <b>${DEN[d].s}</b> (${F(1,d)}).`,reveal:DEN[d].s};
+};
+G.t2_pics=diff=>{
+  let n,d;do{[n,d]=wordFrac();}while(d<3||d>8);
+  const shape=R.pick(['bar','circle']);
+  const P=(a,b)=>svgShapes(Object.assign({shape,d:b,filled:a},shape==='circle'?{r:46,maxw:150}:{bw:230,bh:36,maxw:280}));
+  const cands=[[d-n,d],[n,d+1],[pick2nd(n,d),d],[n,d-1]].filter(([a,b])=>a>=1&&a<b&&!(a===n&&b===d));
+  return {skill:'words',type:'mc',layout:'pics',title:`באיזה ציור רואים <span class="say">${fw(n,d)}</span>?`,
+    options:opts({html:P(n,d),v:[n,d]},cands.map(([a,b])=>({html:P(a,b),v:[a,b],why:`כאן רואים ${fw(a,b)} (${F(a,b)}).`}))),
+    hint:'שם החלקים אומר לכמה חלקים מחלקים. המספר הראשון אומר כמה צבועים.',explain:`<span class="say">${fw(n,d)}</span> = ${F(n,d)}: ${d} חלקים, ${n} צבועים.`,reveal:''};
+};
+G.t2_build=diff=>{
+  let n,d;do{[n,d]=wordFrac(2);}while(d<3);
+  const D=DEN[d],ns=new Set([n]);if(d<=10&&d!==n)ns.add(d);while(ns.size<4)ns.add(R.int(2,10));
+  const ds=new Set([d]);if(n>=2&&n<=10&&n!==d)ds.add(n);while(ds.size<4)ds.add(R.int(3,10));
+  return {skill:'words',type:'pick2',title:`הרכיבי את השבר ${F(n,d)} במילים`,visual:`<div class="bigfr">${F(n,d)}</div>`+svgShapes({shape:'bar',d,filled:n,bw:260,bh:34,maxw:300}),
+    rows:[{label:'כמה חלקים? (המונה)',items:R.shuffle([...ns]).map(x=>({html:numWord(x,D.g),key:x}))},{label:'איזה חלקים? (המכנה)',items:R.shuffle([...ds]).map(x=>({html:DEN[x].p,key:x}))}],
+    check:s=>{if(s[0]===n&&s[1]===d)return null;if(s[0]===d&&s[1]===n)return {msg:`הפכת! קודם המונה (${n}), ואז שם החלקים לפי המכנה (${d}).`};if(s[1]!==d)return {msg:`המכנה הוא ${d}, אז החלקים הם ${D.p}.`};return {msg:`המונה הוא ${n} – כמה חלקים לקחנו.`};},
+    hint:'שורה ראשונה – המונה (למעלה). שורה שנייה – שם החלקים לפי המכנה (למטה).',explain:`${F(n,d)} = <b>${fw(n,d)}</b>`,reveal:fw(n,d),ans:[n,d]};
+};
+
+/* ---- 3: mixed numbers ---- */
+function mixP(diff){
+  const shape=R.pick(['bar','circle']),d=diff===0?R.pick([2,3,4]):diff===1?R.int(3,8):R.pick([5,6,8,10,12]);
+  const w=diff===0?R.int(1,2):diff===1?R.int(1,3):R.int(2,3),k=R.int(1,d-1);
+  return {shape,d,w,k,tot:w*d+k};
+}
+const wholesPic=(p,extra)=>svgShapes(Object.assign({shape:p.shape,d:p.d,wholes:p.w+1,filled:p.tot},p.shape==='circle'?{r:p.w+1>3?42:50}:{bh:38},extra||{}));
+const wholeWord=w=>w===1?'שלם אחד':`${w} שלמים`;
+const wholeFull=w=>w===1?'שלם אחד מלא':`${w} שלמים מלאים`;
+G.t3_steps=diff=>{
+  const p=mixP(Math.min(diff,1)),{shape,d,w,k,tot}=p,sh=SHAPE[shape];
+  return {skill:'mixed',type:'steps',title:'איזה מספר מעורב מתאר את הציור?',visual:wholesPic(p),
+    steps:[
+      {q:`כמה ${sh.many} מלאים לגמרי יש?`,done:`שלמים: ${w}`,options:opts({html:num(w),v:[w,1]},[{html:num(w+1),v:[w+1,1],why:`ה${sh.one} האחרון לא מלא – הוא לא שלם.`},{html:num(tot),v:[tot,1],why:'סופרים שלמים – לא חלקים.'},{html:num(w+2),v:[w+2,1],why:`ספרי שוב את ה${sh.many} המלאים.`},{html:num(k),v:[k,1],why:`ספרי ${sh.many} מלאים.`}])},
+      {q:`לכמה חלקים מחולק כל ${sh.one}?`,done:`המכנה: ${d}`,options:opts({html:num(d),v:[d,1]},[{html:num(d*(w+1)),v:[d*(w+1),1],why:`סופרים חלקים ב${sh.one} <b>אחד</b> בלבד.`},{html:num(k),v:[k,1],why:'אלה החלקים הצבועים באחרון. כמה חלקים יש בו בסך הכול?'},{html:num(d+1),v:[d+1,1],why:'ספרי שוב.'},{html:num(d+2),v:[d+2,1],why:'ספרי שוב.'}])},
+      {q:'אז המספר המעורב הוא...',options:opts({html:MX(w,k,d),v:[tot,d]},[{html:MX(w,d-k,d),v:[w*d+d-k,d],why:'זה החלק הלבן. כמה חלקים צבועים?'},{html:MX(w+1,k,d),v:[(w+1)*d+k,d],why:`יש רק ${w===1?'שלם אחד מלא':w+' שלמים מלאים'}.`},{html:MX(w,k,d*(w+1)),v:[w*d*(w+1)+k,d*(w+1)],why:`המכנה הוא ${d} – חלקים בשלם אחד.`},{html:MX(w,k+(k+1<d?1:-1)||1,d),v:[w*d+(k+(k+1<d?1:-1)||1),d],why:'ספרי שוב את החלקים הצבועים באחרון.'}])}],
+    explain:`${wholeFull(w)} + ${F(k,d)} = ${MX(w,k,d)}`,reveal:MX(w,k,d)};
+};
+G.t3_mc=diff=>{
+  const p=mixP(diff),{d,w,k,tot}=p;
+  return {skill:'mixed',type:'mc',layout:'grid',title:'איזה מספר מעורב מתאר את הציור?',visual:wholesPic(p),
+    options:opts({html:MX(w,k,d),v:[tot,d]},[
+      {html:MX(w,k,d*(w+1)),v:[w*d*(w+1)+k,d*(w+1)],why:`המכנה הוא מספר החלקים בשלם <b>אחד</b> – ${d}.`},
+      {html:MX(w+1,k,d),v:[(w+1)*d+k,d],why:`יש רק ${wholeFull(w)} – האחרון לא מלא.`},
+      {html:MX(w,d-k,d),v:[w*d+d-k,d],why:'זה החלק הלבן בשלם האחרון.'},
+      {html:MX(w,k,d+1),v:[w*(d+1)+k,d+1],why:'ספרי שוב את החלקים בשלם אחד.'}]),
+    hint:'קודם סופרים שלמים מלאים. אחר כך – איזה חלק צבוע מהשלם האחרון.',explain:`${wholeFull(w)} ועוד ${F(k,d)} = ${MX(w,k,d)}`,reveal:MX(w,k,d)};
+};
+G.t3_input=diff=>{
+  const p=mixP(diff),{shape,d,w,k}=p,sh=SHAPE[shape];
+  const wr=[[{w,n:k,d:d*(w+1)}],[{w:w+1,n:k,d}],[{w,n:k,d:d+1}]];if(d-k!==k)wr.push([{w,n:d-k,d}]);
+  return {skill:'mixed',type:'input',title:'כתבי את המספר המעורב שמתאר את הציור.',visual:wholesPic(p),fields:[{kind:'mixed',label:'מספר מעורב'}],
+    check:v=>{const m=diagMixed(v[0].w,v[0].n,v[0].d,p);return m?{msg:m}:null;},
+    hint:`ספרי ${sh.many} מלאים (זה השלם). אחר כך ב${sh.one} האחרון: לכמה חלקים הוא מחולק, וכמה צבועים.`,
+    explain:`${w} ${sh.many} מלאים ← ${w} ${w===1?'שלם':'שלמים'}. כל ${sh.one} מחולק ל־${d} ← המכנה ${d}. באחרון צבועים ${k} ← ${MX(w,k,d)}`,reveal:MX(w,k,d),
+    ans:[{w,n:k,d}],wrongs:wr};
+};
+G.t3_words=diff=>{
+  const d=R.int(2,10),w=R.int(1,3),k=R.int(1,d-1),words=mw(w,k,d);
+  return {skill:'mixed',type:'mc',layout:'grid',title:`איזה מספר כתוב כאן: <span class="say">${words}</span>?`,
+    options:opts({html:MX(w,k,d),v:[w*d+k,d]},[
+      ...(k!==w&&w<d?[{html:MX(k,w,d),v:[k*d+w,d],why:`השלמים הם ${w}, והחלקים ${k}.`}]:[]),
+      {html:F(w*10+k,d),v:[w*10+k,d],why:'זה לא מספר מעורב. מספר מעורב = מספר שלם ועוד שבר.'},
+      {html:MX(w,k,confDen(d)>k?confDen(d):d+1),v:[w*(confDen(d)>k?confDen(d):d+1)+k,confDen(d)>k?confDen(d):d+1],why:`${DEN[d].p} – המכנה ${d}.`},
+      {html:MX(w+1,k,d),v:[(w+1)*d+k,d],why:`${wholeWord(w)} – לא ${w+1}.`}]),
+    hint:'קודם השלמים (המספר הגדול), ואז השבר.',explain:`<span class="say">${words}</span> = ${MX(w,k,d)}`,reveal:MX(w,k,d)};
+};
+G.t3_paint=diff=>{
+  const shape=R.pick(['bar','bar','circle']),d=R.int(3,6),w=R.int(1,2),k=R.int(1,d-1),tot=w*d+k,sh=SHAPE[shape];
+  return {skill:'mixed',type:'paint',title:`צבעי ${MX(w,k,d)} על ה${sh.many}`,sub:`כל ${sh.one} הוא שלם אחד. לחצי על חלקים כדי לצבוע.`,
+    paint:{shape,d,wholes:w+1,extra:shape==='circle'?{r:50}:{bh:38}},target:tot,
+    check:c=>c===tot?null:c===k?`צבעת רק ${F(k,d)}. אל תשכחי את ${w===1?'השלם':'השלמים'}!`:c===w*d?`צבעת ${wholeWord(w)}. עכשיו עוד ${F(k,d)}.`:c===w+k?`כל שלם הוא ${d} חלקים – צריך לצבוע ${sh.one} שלם.`:`צבעת ${c} חלקים. ${MX(w,k,d)} = ${wholeWord(w)} (${w*d} חלקים) ועוד ${k} חלקים.`,
+    hint:`קודם צובעים ${w===1?sh.one+' שלם':w+' '+sh.many+' שלמים'}, ואז ${k} חלקים מה${sh.one} הבא.`,
+    explain:`${MX(w,k,d)} = ${w===1?'שלם אחד מלא':w+' שלמים מלאים'} ועוד ${k} חלקים מתוך ${d}.`,reveal:`צובעים ${w===1?'שלם אחד':w+' שלמים'} ועוד ${k} חלקים – ${tot} חלקים בסך הכול.`};
+};
+G.t3_pics=diff=>{
+  const d=R.int(3,6),w=R.int(1,2),k=R.int(1,d-1);
+  const P=(W,K,D)=>svgShapes({shape:'bar',d:D,wholes:W+(K>0?1:0),filled:W*D+K,bw:230,bh:28,gap:9,maxw:280});
+  const c=[];if(d-k!==k)c.push({html:P(w,d-k,d),v:[w*d+d-k,d],why:`כאן ${MX(w,d-k,d)}.`});
+  c.push({html:P(0,k,d),v:[k,d],why:'כאן אין שלם מלא – זה רק שבר.'},{html:P(w+1,k,d),v:[(w+1)*d+k,d],why:'כאן יש יותר שלמים.'},{html:P(w,k,d+1),v:[w*(d+1)+k,d+1],why:`כאן כל מקל מחולק ל־${d+1}.`});
+  return {skill:'mixed',type:'mc',layout:'pics',title:`באיזה ציור רואים ${MX(w,k,d)}?`,sub:'כל מקל הוא שלם אחד.',
+    options:opts({html:P(w,k,d),v:[w*d+k,d]},R.shuffle(c)),hint:`${MX(w,k,d)}: ${wholeFull(w)}, ועוד ${k} חלקים מתוך ${d}.`,explain:`${MX(w,k,d)} = ${wholeFull(w)} ועוד ${F(k,d)}.`,reveal:''};
+};
+
+/* ---- 4: fractions bigger than 1 ---- */
+G.t4_steps=diff=>{
+  const p=mixP(Math.min(diff,1)),{shape,d,w,k,tot}=p,sh=SHAPE[shape];
+  return {skill:'improper',type:'steps',title:'איזה שבר מתאר את <b>כל</b> החלק הצבוע?',visual:wholesPic(p),
+    steps:[
+      {q:`לכמה חלקים מחולק כל ${sh.one}?`,done:`המכנה: ${d}`,options:opts({html:num(d),v:[d,1]},[{html:num(d*(w+1)),v:[d*(w+1),1],why:`סופרים חלקים ב${sh.one} <b>אחד</b> בלבד.`},{html:num(k),v:[k,1],why:'אלה רק החלקים הצבועים באחרון.'},{html:num(d+1),v:[d+1,1],why:'ספרי שוב.'},{html:num(d+2),v:[d+2,1],why:'ספרי שוב.'}])},
+      {q:`כמה חלקים צבועים בסך הכול? (גם ב${sh.many} המלאים!)`,done:`צבועים: ${tot}`,options:opts({html:num(tot),v:[tot,1]},[{html:num(k),v:[k,1],why:'ספרת רק את האחרון. גם השלמים מלאים בחלקים!'},{html:num(w+k),v:[w+k,1],why:`כל ${sh.one} מלא הוא ${d} חלקים – לא חלק אחד.`},{html:num(w*10+k),v:[w*10+k,1],why:'לא מצמידים מספרים – סופרים חלקים.'},{html:num(tot+1),v:[tot+1,1],why:'ספרי שוב בזהירות.'}])},
+      {q:'אז השבר הוא...',options:opts({html:F(tot,d),v:[tot,d]},[{html:F(k,d),v:[k,d],why:'זה רק החלק שבאחרון.'},{html:F(d,tot),v:[d,tot],why:'הפוך! המכנה (למטה) הוא החלקים בשלם אחד.'},{html:F(tot,d*(w+1)),v:[tot,d*(w+1)],why:'המכנה הוא מספר החלקים בשלם אחד.'},{html:F(w*10+k,d),v:[w*10+k,d],why:'לא מצמידים – סופרים את כל החלקים.'}])}],
+    explain:`סופרים את כל החלקים הצבועים: ${sumEq([...Array(w).fill(d),k],tot)} ← ${F(tot,d)}`,reveal:F(tot,d)};
+};
+G.t4_mc=diff=>{
+  const p=mixP(diff),{d,w,k,tot}=p;
+  return {skill:'improper',type:'mc',layout:'grid',title:'איזה שבר מתאר את <b>כל</b> החלק הצבוע?',visual:wholesPic(p),
+    options:opts({html:F(tot,d),v:[tot,d]},[{html:F(k,d),v:[k,d],why:'זה רק החלק שבשלם האחרון. גם השלמים צבועים!'},{html:F(w*10+k,d),v:[w*10+k,d],why:'הצמדת את מספר השלמים לחלקים. צריך לספור את כל החלקים.'},{html:F(tot,d*(w+1)),v:[tot,d*(w+1)],why:'המכנה = חלקים בשלם אחד.'},{html:F(d,tot),v:[d,tot],why:'הפוך! המכנה הוא למטה.'}]),
+    hint:'סופרים את כל החלקים הצבועים, גם בשלמים. המכנה = חלקים בשלם אחד.',explain:`סופרים את כל החלקים הצבועים: ${sumEq([...Array(w).fill(d),k],tot)} ← ${F(tot,d)}`,reveal:F(tot,d)};
+};
+G.t4_two=diff=>{
+  const p=mixP(diff),{d,w,k,tot}=p;
+  return {skill:'improper',type:'input',title:'כתבי שבר ומספר מעורב המתאימים לציור.',visual:wholesPic(p),
+    fields:[{kind:'frac',label:'שבר'},{kind:'mixed',label:'מספר מעורב'}],eq:[{t:'f',i:0},{t:'op',h:'='},{t:'f',i:1}],eqDir:'rtl',
+    check:v=>{const m1=diagImp(v[0].n,v[0].d,p);if(m1)return {msg:'בשבר: '+m1,bad:[0]};const m2=diagMixed(v[1].w,v[1].n,v[1].d,p);if(m2)return {msg:'במספר המעורב: '+m2,bad:[1]};return null;},
+    hint:'בשבר – סופרים את כל החלקים הצבועים. במספר מעורב – שלמים ועוד שבר.',
+    explain:`סופרים את כל החלקים: ${sumEq([...Array(w).fill(d),k],tot)} ← ${EQ(F(tot,d),MX(w,k,d))}`,reveal:EQ(F(tot,d),MX(w,k,d)),
+    ans:[{n:tot,d},{w,n:k,d}],wrongs:[[{n:w*10+k===tot?tot+1:w*10+k,d},{w,n:k,d}],[{n:k,d},{w,n:k,d}],[{n:tot,d},{w,n:k,d:d*(w+1)}]]};
+};
+G.t4_conv=(diff,variant)=>{
+  variant=variant||R.pick(['toMixed','toWhole','toFrac']);
+  const big=diff===2?10:6;
+  if(variant==='toWhole'){
+    const d=R.int(2,10),m=diff===2?R.pick([0,1,2,3]):R.int(1,3),n=m*d;
+    return {skill:'improper',type:'input',title:`כתבי את ${F(n,d)} כמספר שלם.`,eq:[{t:'html',h:F(n,d)},{t:'op',h:'='},{t:'f',i:0}],fields:[{kind:'whole'}],
+      check:v=>v[0].w===m?null:{msg:n===0?`${F(0,d)} = אפס חלקים – כלום.`:n===d?'כשהמונה שווה למכנה – זה שלם אחד!':`כל ${d} חלקים = שלם אחד. כמה פעמים ${d} נכנס ב־${n}?`},
+      hint:n===0?'כמה חלקים לקחנו?':`כל ${d} חלקים = שלם אחד.`,
+      explain:n===0?`${F(0,d)} = 0 – לא לקחנו אף חלק.`:`${n} חלקים, ${d} בכל שלם ← ${m===1?'שלם אחד':m+' שלמים'}.`,
+      explainVis:n>0?svgShapes({shape:'bar',d,wholes:m,filled:n,bh:30,maxw:340}):null,reveal:num(m),ans:[{w:m}],wrongs:n!==m?[[{w:m+1}],[{w:n}]]:[[{w:m+1}]]};
+  }
+  const d=R.int(2,big),w=R.int(1,3),k=R.int(1,d-1),n=w*d+k;
+  const vis=svgShapes({shape:'bar',d,wholes:w+1,filled:n,labels:'count',bh:30,maxw:360});
+  if(variant==='toMixed'){
+    return {skill:'improper',type:'input',title:`כתבי את ${F(n,d)} כמספר מעורב.`,eq:[{t:'html',h:F(n,d)},{t:'op',h:'='},{t:'f',i:0}],fields:[{kind:'mixed'}],
+      check:v=>{const a=v[0];if(!(a.d>0))return {msg:'המכנה לא יכול להיות 0.'};if(a.w===w&&a.n===k&&a.d===d)return null;if(a.n>=1&&a.n<a.d&&same(a.w*a.d+a.n,a.d,n,d))return null;
+        if(a.d!==d)return {msg:`המכנה לא משתנה – נשאר ${d}.`};if(a.n>=a.d)return {msg:'במספר מעורב השבר קטן מ־1.'};
+        if(a.w!==w)return {msg:`כל ${d} חלקים = שלם אחד. כמה שלמים אפשר לבנות מ־${n} חלקים?`};return {msg:`אחרי ${wholeWord(w)} (${w*d} חלקים) – כמה חלקים נשארו מתוך ${n}?`};},
+      hint:`כל ${d} חלקים הם שלם אחד. כמה שלמים אפשר לבנות מ־${n} חלקים?`,
+      explain:`<span class="ltr nm">${n} = ${[...Array(w).fill(d),k].join(' + ')}</span> ← ${wholeWord(w)} ועוד ${F(k,d)} = ${MX(w,k,d)}`,explainVis:vis,reveal:MX(w,k,d),
+      ans:[{w,n:k,d}],wrongs:[[{w:w+1,n:k,d}],[{w,n:k,d:n}],[{w:k,n:w,d:d+1}]]};
+  }
+  return {skill:'improper',type:'input',title:`כתבי את ${MX(w,k,d)} כשבר.`,eq:[{t:'html',h:MX(w,k,d)},{t:'op',h:'='},{t:'f',i:0}],fields:[{kind:'frac'}],
+    check:v=>{const a=v[0];if(!(a.d>0))return {msg:'המכנה לא יכול להיות 0.'};if(same(a.n,a.d,n,d))return null;
+      if(a.n===w*10+k)return {msg:`אל תצמידי את המספרים! כל שלם הוא ${d} חלקים.`};if(a.d!==d)return {msg:`המכנה נשאר ${d}.`};
+      if(a.n===w+k)return {msg:`כל שלם הוא ${d} חלקים – לא חלק אחד.`};if(a.n===w*k)return {msg:`לא כופלים את השלם במונה. כל שלם = ${d} חלקים, ואז מוסיפים עוד ${k}.`};
+      return {msg:`${wholeWord(w)} = ${w*d} חלקים. ועוד ${k}...`};},
+    hint:`כל שלם הוא ${d} חלקים. כמה חלקים יש ב־${wholeWord(w)}? ועוד ${k}.`,
+    explain:`${wholeWord(w)} = ${w*d} חלקים, ועוד ${k} ← ${sumEq([w*d,k],n)} ← ${F(n,d)}`,explainVis:vis,reveal:F(n,d),
+    ans:[{n,d}],wrongs:[[{n:w*10+k===n?n+1:w*10+k,d}],[{n:w+k,d}],[{n,d:d+1}]]};
+};
+G.t4_mcconv=diff=>{
+  const d=R.int(2,8),w=R.int(1,3),k=R.int(1,d-1),n=w*d+k;
+  if(R.chance(.5)){
+    return {skill:'improper',type:'mc',layout:'grid',title:`איזה שבר שווה ל־${MX(w,k,d)}?`,
+      options:opts({html:F(n,d),v:[n,d]},[{html:F(w+k,d),v:[w+k,d],why:`כל שלם הוא ${d} חלקים – לא חלק אחד.`},{html:F(w*10+k,d),v:[w*10+k,d],why:'לא מצמידים את המספרים.'},{html:F(d,n),v:[d,n],why:'הפוך! המכנה למטה.'},{html:F(w*k,d),v:[w*k,d],why:'לא כופלים את השלם במונה.'}]),
+      hint:`${wholeWord(w)} = כמה חלקים של ${F(1,d)}?`,explain:`${wholeWord(w)} = ${w*d} חלקים, ועוד ${k} ← ${F(n,d)}`,reveal:F(n,d),
+      explainVis:svgShapes({shape:'bar',d,wholes:w+1,filled:n,labels:'count',bh:30,maxw:360})};
+  }
+  const c=[];if(k!==w&&w<d)c.push({html:MX(k,w,d),v:[k*d+w,d],why:'השלם והמונה התחלפו.'});
+  c.push({html:MX(w+1,k,d),v:[(w+1)*d+k,d],why:'ספרי שוב כמה שלמים.'});
+  if(k+1<d)c.push({html:MX(w,k+1,d),v:[w*d+k+1,d],why:'ספרי שוב כמה חלקים נשארו.'});
+  if(n>=10&&n%10>=1&&n%10<d){const a=Math.floor(n/10),b=n%10;c.push({html:MX(a,b,d),v:[a*d+b,d],why:'לא מפרקים את הספרות! סופרים כמה שלמים יש בחלקים.'});}
+  c.push({html:MX(w,k,d+1),v:[w*(d+1)+k,d+1],why:`המכנה נשאר ${d}.`});
+  return {skill:'improper',type:'mc',layout:'grid',title:`איזה מספר מעורב שווה ל־${F(n,d)}?`,options:opts({html:MX(w,k,d),v:[n,d]},c),
+    hint:`כל ${d} חלקים = שלם אחד.`,explain:`<span class="ltr nm">${n} = ${[...Array(w).fill(d),k].join(' + ')}</span> ← ${MX(w,k,d)}`,reveal:MX(w,k,d),
+    explainVis:svgShapes({shape:'bar',d,wholes:w+1,filled:n,labels:'count',bh:30,maxw:360})};
+};
+
+/* ---- 5: less than / equal to / greater than 1 ---- */
+const REL=['קטן מ־1','שווה ל־1','גדול מ־1'];
+G.t5_class=diff=>{
+  const d=R.int(2,10),r=Math.random();let n;
+  if(r<.4)n=R.int(1,d-1);else if(r<.6)n=d;else n=R.int(d+1,2*d+(diff>0?3:0));
+  const cat=n<d?0:n===d?1:2;
+  const why=cat===0?`המונה ${n} קטן מהמכנה ${d} – לא לקחנו שלם שלם.`:cat===1?`המונה שווה למכנה – לקחנו בדיוק את כל החלקים של שלם אחד.`:`המונה ${n} גדול מהמכנה ${d} – יש יותר חלקים ממה שיש בשלם אחד.`;
+  return {skill:'cmp1',type:'mc',layout:'three',title:`השבר ${F(n,d)} הוא...`,visual:`<div class="bigfr">${F(n,d)}</div>`,
+    options:REL.map((h,i)=>({html:h,correct:i===cat,why})),hint:'משווים את המונה (למעלה) למכנה (למטה).',explain:why,
+    explainVis:svgShapes({shape:'bar',d,wholes:Math.max(1,Math.ceil(n/d)),filled:n,bh:28,maxw:330}),reveal:REL[cat]};
+};
+G.t5_eq1=diff=>{
+  if(R.chance(.55)){
+    const d=R.int(3,10);
+    return {skill:'cmp1',type:'mc',layout:'grid',title:'איזה שבר שווה ל־1?',
+      options:opts({html:F(d,d),v:[d,d]},[{html:F(1,d),v:[1,d],why:`זה חלק אחד בלבד – ${DEN[d].s}.`},{html:F(d,1),v:[d,1],why:`${F(d,1)} = ${d} שלמים!`},{html:F(d+1,d),v:[d+1,d],why:'זה יותר משלם.'},{html:F(d-1,d),v:[d-1,d],why:'חסר עוד חלק אחד לשלם.'}]),
+      hint:'שבר שווה ל־1 כשלוקחים את כל החלקים של השלם.',explain:`${F(d,d)}: לקחנו את כל ${d} החלקים – שלם אחד.`,reveal:F(d,d)};
+  }
+  const c='כשהמונה שווה למכנה';
+  return {skill:'cmp1',type:'mc',layout:'list',title:'מתי שבר שווה ל־1?',
+    options:opts({html:c},[{html:'כשהמונה הוא 1',why:`לא. למשל ${F(1,4)} הוא רק רבע.`},{html:'כשהמכנה הוא 1',why:`לא. למשל ${F(5,1)} = 5.`},{html:'כשהמונה גדול מהמכנה',why:'אז השבר גדול מ־1.'}]),
+    hint:`חשבי על ${F(4,4)} או על ${F(7,7)}.`,explain:`כשהמונה שווה למכנה – כמו ${F(5,5)} – לקחנו את כל החלקים: שלם אחד.`,reveal:c};
+};
+const FLAG_WORDS=['כיף','יופי','מלכה','אלופה','כוכבת','חזקה','שוקו','פיצה','גאונה','נהדר'];
+const LETTERS='אבגדהוזחטיכלמנסעפצקרשת';
+G.t5_flags=diff=>{
+  const target=diff===2&&R.chance(.4)?'lt':'gt',word=R.pick(FLAG_WORDS),total=Math.min(8,word.length+(word.length<=3?3:2));
+  const pos=new Set(R.shuffle(range(0,total-1)).slice(0,word.length)),used=new Set();
+  const mk=kind=>{let n,d,key;do{d=R.int(2,9);n=kind==='gt'?R.int(d+1,2*d):kind==='lt'?R.int(1,d-1):d;key=n+'/'+d;}while(used.has(key));used.add(key);return [n,d];};
+  const items=[];let li=0;
+  for(let i=0;i<total;i++){
+    if(pos.has(i)){const f=mk(target);items.push({html:F(f[0],f[1]),letter:word[li++],good:true});}
+    else{const f=mk(R.pick(target==='gt'?['lt','lt','eq']:['gt','gt','eq']));items.push({html:F(f[0],f[1]),letter:R.pick(LETTERS),good:false});}
+  }
+  const big=target==='gt';
+  return {skill:'cmp1',type:'multi',flags:true,word,title:`בחרי את כל השברים ${big?'<b>הגדולים</b> מ־1':'<b>הקטנים</b> מ־1'}`,sub:'האותיות על הדגלים שתבחרי יגלו מילה סודית!',items,
+    hint:big?'שבר גדול מ־1 כשהמונה (למעלה) גדול מהמכנה (למטה).':'שבר קטן מ־1 כשהמונה (למעלה) קטן מהמכנה (למטה).',
+    explain:big?'בחרנו שברים שהמונה שלהם גדול מהמכנה.':'בחרנו שברים שהמונה שלהם קטן מהמכנה.',reveal:''};
+};
+G.t5_fill=diff=>{
+  const v=R.pick(diff===0?['gtN','ltN','eqN']:['gtN','ltN','eqN','gtD','ltD','eqD']),d=R.int(3,9),n=R.int(2,9);
+  const rel=v.slice(0,2),isN=v.endsWith('N'),relTxt={gt:'גדול מ־1',lt:'קטן מ־1',eq:'שווה ל־1'}[rel],sym={gt:'&gt;',lt:'&lt;',eq:'='}[rel];
+  const ex={gt:isN?`כל מונה גדול מ־${d}: למשל ${F(d+1,d)} או ${F(d+4,d)}.`:`כל מכנה קטן מ־${n}: למשל ${F(n,n-1)}${n>2?' או '+F(n,1):''}.`,
+            lt:isN?`כל מונה קטן מ־${d}: למשל ${F(1,d)} או ${F(d-1,d)}.`:`כל מכנה גדול מ־${n}: למשל ${F(n,n+1)} או ${F(n,n+5)}.`,
+            eq:isN?`רק ${F(d,d)} – כשהמונה שווה למכנה.`:`רק ${F(n,n)} – כשהמונה שווה למכנה.`}[rel];
+  const ans=rel==='gt'?(isN?{n:d+1,d}:{n,d:n-1}):rel==='lt'?(isN?{n:1,d}:{n,d:n+1}):(isN?{n:d,d}:{n,d:n});
+  const wrong=rel==='eq'?(isN?{n:d+1,d}:{n,d:n+1}):(isN?{n:d,d}:{n,d:n});
+  return {skill:'cmp1',type:'input',title:`השלימי ${isN?'מונה':'מכנה'} כך שהשבר יהיה ${relTxt}`,sub:rel==='eq'?'':'יש כמה תשובות נכונות – מספיק אחת.',
+    fields:[isN?{kind:'frac',fixD:d}:{kind:'frac',fixN:n}],eq:[{t:'f',i:0},{t:'op',h:sym},{t:'html',h:num(1)}],
+    check:x=>{const a=x[0];if(!(a.d>0))return {msg:'המכנה לא יכול להיות 0.'};const ok=rel==='gt'?a.n>a.d:rel==='lt'?a.n<a.d:a.n===a.d;if(ok)return null;
+      if(a.n===a.d)return {msg:`${F(a.n,a.d)} שווה ל־1 בדיוק.`};return {msg:a.n>a.d?`${F(a.n,a.d)} גדול מ־1 – המונה גדול מהמכנה.`:`${F(a.n,a.d)} קטן מ־1 – המונה קטן מהמכנה.`};},
+    hint:'משווים את המונה למכנה.',explain:ex,reveal:'',ans:[ans],wrongs:[[wrong]]};
+};
+G.t5_two=diff=>{
+  const v=R.pick(['ltD','gtN','gtD']);
+  if(v==='gtN'){
+    const n=R.int(3,6);
+    return {skill:'cmp1',type:'input',title:`כתבי שני שברים <b>שונים</b> הגדולים מ־1, שהמונה שלהם ${n}`,fields:[{kind:'frac',fixN:n},{kind:'frac',fixN:n}],eq:[{t:'f',i:0},{t:'gap'},{t:'f',i:1}],
+      check:x=>{for(let i=0;i<2;i++){const dd=x[i].d;if(!(dd>0))return {msg:'המכנה לא יכול להיות 0.',bad:[i]};if(dd===n)return {msg:`${F(n,n)} שווה ל־1 – לא גדול ממנו.`,bad:[i]};if(dd>n)return {msg:`${F(n,dd)} קטן מ־1 – המונה קטן מהמכנה.`,bad:[i]};}
+        if(x[0].d===x[1].d)return {msg:'השברים צריכים להיות שונים זה מזה.',bad:[1]};return null;},
+      hint:'כדי שהשבר יהיה גדול מ־1, המכנה צריך להיות קטן מהמונה.',explain:`מכנה קטן מ־${n}: למשל ${F(n,1)}, ${F(n,2)}${n>3?', '+F(n,3):''}.`,reveal:'',
+      ans:[{n,d:1},{n,d:2}],wrongs:[[{n,d:1},{n,d:1}],[{n,d:n},{n,d:1}],[{n,d:n+1},{n,d:1}]]};
+  }
+  const d=v==='ltD'?R.int(5,9):R.int(3,8),lt=v==='ltD';
+  return {skill:'cmp1',type:'input',title:`כתבי שני שברים <b>שונים</b> ה${lt?'קטנים':'גדולים'} מ־1, שהמכנה שלהם ${d}`,fields:[{kind:'frac',fixD:d},{kind:'frac',fixD:d}],eq:[{t:'f',i:0},{t:'gap'},{t:'f',i:1}],
+    check:x=>{for(let i=0;i<2;i++){const nn=x[i].n;if(nn===d)return {msg:`${F(d,d)} שווה ל־1.`,bad:[i]};if(lt&&nn>d)return {msg:`${F(nn,d)} גדול מ־1.`,bad:[i]};if(!lt&&nn<d)return {msg:`${F(nn,d)} קטן מ־1.`,bad:[i]};}
+      if(x[0].n===x[1].n)return {msg:'השברים צריכים להיות שונים זה מזה.',bad:[1]};return null;},
+    hint:lt?'מונה קטן מהמכנה ← השבר קטן מ־1.':'מונה גדול מהמכנה ← השבר גדול מ־1.',explain:lt?`מונה קטן מ־${d}: למשל ${F(1,d)}, ${F(2,d)}, ${F(d-1,d)}.`:`מונה גדול מ־${d}: למשל ${F(d+1,d)}, ${F(d+2,d)}, ${F(2*d,d)}.`,reveal:'',
+    ans:lt?[{n:1,d},{n:2,d}]:[{n:d+1,d},{n:d+2,d}],wrongs:lt?[[{n:1,d},{n:1,d}],[{n:d,d},{n:1,d}],[{n:d+1,d},{n:2,d}]]:[[{n:d+1,d},{n:d+1,d}],[{n:d,d},{n:d+1,d}],[{n:1,d},{n:d+1,d}]]};
+};
+G.t5_pics=diff=>{
+  const target=R.pick(['gt','gt','lt','eq']),d=R.int(3,6);
+  const fr={gt:()=>[R.int(d+1,2*d-1),d],lt:()=>[R.int(1,d-1),d],eq:()=>[d,d]};
+  const others=['gt','lt','eq'].filter(x=>x!==target);
+  const P=([n,dd])=>svgShapes({shape:'bar',d:dd,wholes:Math.max(1,Math.ceil(n/dd)),filled:n,bw:230,bh:28,gap:9,maxw:280});
+  const c=fr[target](),ws=[fr[others[0]](),fr[others[1]](),fr[R.pick(others)]()];
+  const T={gt:'גדול מ־1',lt:'קטן מ־1',eq:'שווה ל־1 בדיוק'};
+  return {skill:'cmp1',type:'mc',layout:'pics',title:`באיזה ציור החלק הצבוע ${T[target]}?`,sub:'כל מקל הוא שלם אחד.',
+    options:opts({html:P(c),v:c},ws.map(f=>({html:P(f),v:f,why:f[0]<f[1]?'כאן צבוע פחות ממקל שלם – קטן מ־1.':f[0]===f[1]?'כאן צבוע בדיוק מקל אחד – שווה ל־1.':'כאן צבוע יותר ממקל שלם – גדול מ־1.'}))),
+    hint:'מקל אחד צבוע לגמרי = 1.',explain:`${F(c[0],c[1])} ${T[target]}.`,reveal:''};
+};
+
+/* ---- 6: equivalent fractions ---- */
+const EQ_FAM=[[[2,4],[2,8],[4,8]],[[2,4],[2,8],[4,8],[3,6]],[[2,4],[2,8],[4,8],[3,6],[5,10],[2,6],[2,10]]];
+function eqPair(diff){const [b,e]=R.pick(EQ_FAM[diff]),a=R.int(1,b-1);return {a,b,c:a*e/b,e};}
+const wallRows=(b,e)=>{const s=new Set([1,b,e]);if(b===2&&e===8)s.add(4);return [...s].sort((x,y)=>x-y);};
+const gw=d=>DEN[d].g==='f'?'שוות':'שווים';
+G.t6_mc=diff=>{
+  const {a,b,c,e}=eqPair(diff),up=R.chance(.6),[gn,gd,td,an]=up?[a,b,e,c]:[c,e,b,a];
+  return {skill:'equiv',type:'mc',layout:'grid',title:EQ(F(gn,gd),F('?',td)),sub:`כמה ${DEN[td].p} ${gw(td)} ל־${F(gn,gd)}? ספרי במקל עד הקו.`,
+    visual:svgWall({rows:wallRows(b,e),hl:{[gd]:gn},line:gn/gd}),
+    options:opts({html:num(an),v:[an,1]},[{html:num(gn),v:[gn,1],why:up?'כשהחלקים קטנים יותר – צריך יותר חלקים לאותו אורך.':'כשהחלקים גדולים יותר – צריך פחות חלקים לאותו אורך.'},{html:num(an+1),v:[an+1,1],why:'ספרי במקל עד הקו המקווקו.'},{html:num(an-1),v:[an-1,1],why:'ספרי במקל עד הקו המקווקו.'},{html:num(an+2),v:[an+2,1],why:'ספרי במקל עד הקו המקווקו.'}].filter(x=>x.v[0]>=1)),
+    hint:`ספרי כמה ${DEN[td].p} יש עד הקו המקווקו.`,explain:`${F(gn,gd)} ו־${F(an,td)} – אותו אורך במקל! ${EQ(F(gn,gd),F(an,td))}`,
+    explainVis:svgWall({rows:wallRows(b,e),hl:{[gd]:gn,[td]:an},line:gn/gd}),reveal:num(an)};
+};
+G.t6_in=diff=>{
+  const {a,b,c,e}=eqPair(diff),up=R.chance(.5),[gn,gd,td,an]=up?[a,b,e,c]:[c,e,b,a];
+  return {skill:'equiv',type:'input',title:'השלימי:',sub:`היעזרי במקלות: כמה ${DEN[td].p} מגיעים עד הקו?`,visual:svgWall({rows:wallRows(b,e),hl:{[gd]:gn},line:gn/gd}),
+    fields:[{kind:'frac',fixD:td}],eq:[{t:'html',h:F(gn,gd)},{t:'op',h:'='},{t:'f',i:0}],
+    check:x=>x[0].n===an?null:{msg:x[0].n===gn?`המונה משתנה כשמשנים את גודל החלקים. ספרי במקל ה${DEN[td].p} עד הקו.`:`ספרי במקל ה${DEN[td].p} כמה חלקים יש עד הקו המקווקו.`},
+    hint:`ספרי במקל ה${DEN[td].p}.`,explain:`${EQ(F(gn,gd),F(an,td))} – אותו אורך במקל.`,explainVis:svgWall({rows:wallRows(b,e),hl:{[gd]:gn,[td]:an},line:gn/gd}),reveal:F(an,td),
+    ans:[{n:an,d:td}],wrongs:[[{n:gn===an?an+1:gn,d:td}],[{n:an+1,d:td}]]};
+};
+G.t6_paint=diff=>{
+  const {a,b,c,e}=eqPair(diff);
+  return {skill:'equiv',type:'paint',title:`צבעי במקל ה${DEN[e].p} חלק השווה ל־${F(a,b)}`,sub:'השווי לאורך הצבוע במקל שלמעלה.',
+    paint:{shape:'bar',d:e,wholes:1,ref:svgShapes({shape:'bar',d:b,filled:a}),refCap:`${F(a,b)}`},target:c,
+    check:n=>n===c?null:n===a&&a!==c?`צבעת ${a} – אבל ה${DEN[e].p} קטנים יותר! השווי את האורך למקל שלמעלה.`:n<c?'צבעי עוד – עד שהאורך יהיה כמו במקל שלמעלה.':'צבעת יותר מדי – השווי את האורך למקל שלמעלה.',
+    hint:'הצבוע במקל התחתון צריך להגיע בדיוק עד אותו מקום כמו במקל העליון.',explain:`${EQ(F(a,b),F(c,e))} – אותו אורך במקל.`,reveal:`צובעים ${c} ${DEN[e].p}.`};
+};
+function equivs(a,b){const out=[];for(const y of [2,3,4,5,6,8,9,10,12,16]){if((a*y)%b===0){const x=a*y/b;if(!(x===a&&y===b)&&x>=1)out.push([x,y]);}}return out;}
+G.t6_free=diff=>{
+  const [a,b]=R.pick([[2,4],[1,2],[4,8],[6,8],[2,8],[3,6],[1,4],[3,4]]),two=diff===2,eqs=equivs(a,b);
+  const rows=b%3===0?[1,3,6]:[1,2,4,8];
+  return {skill:'equiv',type:'input',title:two?`השלימי שתי אפשרויות <b>שונות</b>:`:`כתבי שבר <b>אחר</b> השווה ל־${F(a,b)}`,sub:'אפשר להיעזר במקלות השברים.',
+    visual:svgWall({rows,hl:{[b]:a},line:a/b}),fields:two?[{kind:'frac'},{kind:'frac'}]:[{kind:'frac'}],
+    eq:two?[{t:'html',h:F(a,b)},{t:'op',h:'='},{t:'f',i:0},{t:'op',h:'='},{t:'f',i:1}]:[{t:'html',h:F(a,b)},{t:'op',h:'='},{t:'f',i:0}],
+    check:x=>{for(let i=0;i<x.length;i++){const f=x[i];if(!(f.d>0))return {msg:'המכנה לא יכול להיות 0.',bad:[i]};if(f.n===a&&f.d===b)return {msg:'זה אותו שבר בדיוק 😉 כתבי שבר אחר.',bad:[i]};if(!same(f.n,f.d,a,b))return {msg:`${F(f.n,f.d)} לא שווה ל־${F(a,b)}. איזה שבר במקלות מגיע עד הקו?`,bad:[i]};}
+      if(two&&x[0].n===x[1].n&&x[0].d===x[1].d)return {msg:'כתבת את אותו שבר פעמיים. נסי אפשרות אחרת.',bad:[1]};return null;},
+    hint:'מחפשים במקלות שבר אחר שמגיע בדיוק עד הקו המקווקו.',explain:`למשל: ${eqs.slice(0,3).map(([x,y])=>F(x,y)).join(' , ')} – כולם שווים ל־${F(a,b)}.`,reveal:'',
+    ans:two?[{n:eqs[0][0],d:eqs[0][1]},{n:eqs[1][0],d:eqs[1][1]}]:[{n:eqs[0][0],d:eqs[0][1]}],
+    wrongs:two?[[{n:a,d:b},{n:eqs[0][0],d:eqs[0][1]}],[{n:eqs[0][0],d:eqs[0][1]},{n:eqs[0][0],d:eqs[0][1]}],[{n:a+1,d:b+1},{n:eqs[0][0],d:eqs[0][1]}]]:[[{n:a,d:b}],[{n:a+1,d:b+1}]]};
+};
+G.t6_odd=diff=>{
+  const [a,b]=R.pick([[1,2],[1,2],[1,4],[3,4],[1,3],[2,3]]),eqs=R.shuffle(equivs(a,b)).slice(0,3),odd=[a+1,b+1];
+  return {skill:'equiv',type:'mc',layout:'grid',title:`איזה שבר <b>לא</b> שווה ל־${F(a,b)}?`,
+    options:opts({html:F(odd[0],odd[1])},eqs.map(([x,y])=>({html:F(x,y),why:`${F(x,y)} כן שווה ל־${F(a,b)} – הוא מגיע בדיוק עד אותו מקום במקל.`}))),
+    hint:'שלושה מהשברים שווים זה לזה. אחד – לא.',explain:`${F(odd[0],odd[1])} לא שווה ל־${F(a,b)}. כשמוסיפים 1 למונה ו־1 למכנה – השבר משתנה.`,reveal:F(odd[0],odd[1])};
+};
+
+/* ============ topics ============ */
+const SKILL={
+  nd:{name:'מונה ומכנה',tip:`המכנה (למטה) = לכמה חלקים שווים חילקו שלם אחד. המונה (למעלה) = כמה חלקים צבועים.`},
+  words:{name:'שברים במילים',tip:`קודם המונה ואז שם החלקים: ${F(3,8)} = שלוש שמיניות, ${F(1,2)} = חצי.`},
+  mixed:{name:'מספר מעורב',tip:'סופרים שלמים מלאים. בשלם האחרון – כמה צבועים מתוך החלקים של שלם אחד.'},
+  improper:{name:'שבר גדול מ־1',tip:'סופרים את כל החלקים הצבועים, גם בשלמים. המכנה = חלקים בשלם אחד.'},
+  cmp1:{name:'קטן / שווה / גדול מ־1',tip:'משווים מונה למכנה: מונה קטן ← קטן מ־1. שווים ← 1. מונה גדול ← גדול מ־1.'},
+  equiv:{name:'שברים שווים',tip:`אותו אורך במקל = אותו שבר: ${EQ(F(1,2),F(2,4),F(4,8))}.`}
+};
+const TOPICS=[
+  {id:1,emoji:'🍕',title:'מונה ומכנה',sub:'מה כותבים למעלה ומה למטה?',c:'#ff7a52',fill:'#ff9a6b',plan:[['t1_concept','t1_pic','t1_paint'],['t1_equal','t1_pic','t1_two'],['t1_multi','t1_two','t1_pizza']]},
+  {id:2,emoji:'🗣️',title:'שברים במילים',sub:`${F(3,8)} = שלוש שמיניות`,c:'#7b5cff',fill:'#b19dff',plan:[['t2_half','t2_read','t2_write'],['t2_unit','t2_pics','t2_read'],['t2_build','t2_write','t2_build']]},
+  {id:3,emoji:'🧩',title:'מספר מעורב',sub:'שלמים ועוד שבר',c:'#16b6a6',fill:'#5fd6c8',key:true,plan:[['t3_steps','t3_mc','t3_steps'],['t3_input','t3_words','t3_mc'],['t3_paint','t3_input','t3_pics']]},
+  {id:4,emoji:'🔁',title:'שבר גדול מ־1',sub:'סופרים את כל החלקים',c:'#2fa7f0',fill:'#7cc8ff',key:true,plan:[['t4_steps','t4_mc','t4_steps'],['t4_two','t4_mcconv','t4_conv:toFrac'],['t4_conv:toMixed','t4_conv:toWhole','t4_two']]},
+  {id:5,emoji:'⚖️',title:'קטן, שווה או גדול מ־1',sub:'משווים מונה למכנה',c:'#f25c9b',fill:'#ff9cc6',plan:[['t5_class','t5_eq1','t5_class'],['t5_flags','t5_fill','t5_pics'],['t5_two','t5_fill','t5_flags']]},
+  {id:6,emoji:'🪄',title:'שברים שווים',sub:EQ(F(1,2),F(2,4),F(4,8)),c:'#f0a019',fill:'#ffc95c',plan:[['t6_mc','t6_mc','t6_paint'],['t6_in','t6_paint','t6_odd'],['t6_free','t6_in','t6_odd']]},
+  {id:7,emoji:'🏆',title:'בוחן מסכם',sub:'הכול ביחד – כמו בבוחן',c:'#24214a',fill:'#ff9a6b',plan:'mix'}
+];
+const MIXP=[['t1_pic','t2_read','t3_mc','t4_mc','t5_class','t6_mc','t2_write','t3_steps','t4_steps'],['t1_two','t2_build','t3_input','t4_two','t5_fill','t6_in','t4_mcconv','t3_words'],['t3_input','t4_conv','t4_two','t2_build','t5_two','t6_free','t1_two','t3_paint']];
+function mixPlan(ch){const pool=MIXP[ch],t3=R.pick(pool.filter(x=>x.startsWith('t3'))),t4=R.pick(pool.filter(x=>x.startsWith('t4')));return R.shuffle([t3,t4,...R.shuffle(pool.filter(x=>x!==t3&&x!==t4)).slice(0,2)]);}
+
+/* ============ profile ============ */
+const SAVE_KEY='fraction-quest-v1';
+const defaultProfile=()=>({v:1,slices:28,owned:{color:['orange'],hat:['none','cap'],trail:['none']},eq:{color:'orange',hat:'cap',trail:'none'},stars:{},last:{},stats:{},tut:false,sound:true});
+let profile=defaultProfile();
+function loadLocal(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+let saveT=0;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify(profile));}catch(e){}},250);}
+function mergeProfile(p){
+  const d=defaultProfile();if(!p||typeof p!=='object')return d;
+  const out=Object.assign(d,p);
+  out.owned=Object.assign(defaultProfile().owned,p.owned||{});out.eq=Object.assign(defaultProfile().eq,p.eq||{});
+  ['color','hat','trail'].forEach(k=>{if(!Array.isArray(out.owned[k]))out.owned[k]=defaultProfile().owned[k];});
+  out.stars=out.stars||{};out.last=out.last||{};out.stats=out.stats||{};
+  if(typeof out.slices!=='number'||!(out.slices>=0))out.slices=28;
+  return out;
+}
+
+/* ============ sound ============ */
+const AU={ctx:null};
+function audioInit(){try{if(!AU.ctx){const C=window.AudioContext||window.webkitAudioContext;if(C)AU.ctx=new C();}if(AU.ctx&&AU.ctx.state==='suspended')AU.ctx.resume().catch(()=>{});}catch(e){}}
+function tone(f,dur,type,vol,delay,f2){
+  const c=AU.ctx;if(!c||!profile.sound||c.state!=='running')return;
+  try{const o=c.createOscillator(),g=c.createGain(),t=c.currentTime+(delay||0);o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol||.1,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+.03);}catch(e){}
+}
+const SFX={
+  jump:()=>tone(420,.16,'square',.04,0,760),
+  coin:()=>{tone(988,.07,'square',.04);tone(1319,.12,'square',.04,.06);},
+  hurt:()=>tone(320,.3,'sawtooth',.06,0,110),
+  stomp:()=>tone(240,.12,'square',.06,0,520),
+  ok:()=>{tone(523,.12,'triangle',.12);tone(659,.12,'triangle',.12,.1);tone(784,.24,'triangle',.12,.2);},
+  no:()=>tone(200,.22,'square',.04,0,150),
+  gate:()=>tone(260,.6,'triangle',.08,0,620),
+  win:()=>{[523,659,784,1047].forEach((f,i)=>tone(f,.2,'triangle',.11,i*.12));},
+  tap:()=>tone(700,.05,'sine',.05)
+};
+
+/* ============ shop catalogue ============ */
+const SHOP={
+  color:[{id:'orange',name:'כתום',c:'#ff8a3d',price:0},{id:'pink',name:'ורוד',c:'#ff6fae',price:4},{id:'grape',name:'סגול',c:'#8e6bff',price:4},{id:'teal',name:'טורקיז',c:'#19c3b1',price:4},{id:'sun',name:'צהוב',c:'#ffcc33',price:5},{id:'sky',name:'תכלת',c:'#4cc9ff',price:5},{id:'mint',name:'ירוק',c:'#5ad16b',price:5},{id:'rainbow',name:'קשת',c:'rainbow',price:20}],
+  hat:[{id:'none',name:'בלי כובע',e:'🙂',price:0},{id:'cap',name:'כובע מצחייה',e:'🧢',price:0},{id:'bow',name:'סרט',e:'🎀',price:6},{id:'flower',name:'פרח',e:'🌸',price:6},{id:'pizza',name:'כובע פיצה',e:'🍕',price:8},{id:'tophat',name:'צילינדר',e:'🎩',price:8},{id:'grad',name:'כובע סיום',e:'🎓',price:10},{id:'crown',name:'כתר',e:'👑',price:15}],
+  trail:[{id:'none',name:'בלי שובל',e:'➖',price:0},{id:'sparkle',name:'נצנצים',e:'✨',price:8},{id:'bubbles',name:'בועות',e:'🫧',price:8},{id:'hearts',name:'לבבות',e:'💖',price:10},{id:'rainbow',name:'שובל קשת',e:'🌈',price:14}]
+};
+const HATS={bow:{e:'🎀',s:22,dx:-8,dy:3,r:-.35},flower:{e:'🌸',s:20,dx:-9,dy:4,r:0},pizza:{e:'🍕',s:24,dx:0,dy:-3,r:.3},tophat:{e:'🎩',s:28,dx:0,dy:-6,r:0},grad:{e:'🎓',s:28,dx:0,dy:-5,r:0},crown:{e:'👑',s:24,dx:0,dy:-5,r:0}};
+const colorOf=id=>{const it=SHOP.color.find(x=>x.id===id);return it?it.c:'#ff8a3d';};
+
+/* ============ pizza wallet text ============ */
+function pzHTML(s){const w=Math.floor(s/8),r=s%8;if(r===0)return num(w);if(w===0)return F(r,8);return MX(w,r,8);}
+function pzPhrase(s){if(s<=0)return 'אין לך עדיין פיצות';if(s===8)return 'פיצה אחת';return `${pzHTML(s)} ${s<8?'פיצה':'פיצות'}`;}
+function walletHTML(){return `${pieSVG(profile.slices%8,8,28)} יש לך: <b>${pzPhrase(profile.slices)}</b>`;}
+
+/* ============ WORLD / ENGINE ============ */
+const T=40,WH=450,GY=370,GATE_H=250,DOOR_W=44,DOOR_H=92;
+const PH={g:2300,jump:800,maxFall:950,acc:2600,air:1900,fric:3000,maxV:255,coyote:.1,buffer:.14};
+const THEMES=[
+  {emoji:'🌳',sky:['#79c7ff','#dff4ff'],sun:'#ffe066',hills:['#b6e3a5','#8fcf86'],grass:'#5cc04a',grassD:'#3e9b33',dirt:'#9a6236',dirtD:'#7c4c28',crate:'#cf9150',night:false,cloud:'rgba(255,255,255,.92)'},
+  {emoji:'🏖️',sky:['#ff9f7f','#ffe7bf'],sun:'#fff3b0',hills:['#f7c58c','#eaa96c'],grass:'#f2d27a',grassD:'#d4b257',dirt:'#cf8a4f',dirtD:'#ac6c38',crate:'#b97b3e',night:false,cloud:'rgba(255,248,240,.85)'},
+  {emoji:'🌙',sky:['#20235a','#5a4ea1'],sun:'#fff6c9',hills:['#3b3a7c','#2c2b63'],grass:'#43b07a',grassD:'#2f8a5c',dirt:'#5e3c2b',dirtD:'#4a2e20',crate:'#a5713d',night:true,cloud:'rgba(255,255,255,.12)'}
+];
+const DIFF=['קל','בינוני','קשה'];
+const cvs=$('#world'),ctx=cvs.getContext('2d');
+let VW=800,VH=450,SCALE=1,DPR=1;
+let L=null,menuL=null;
+const P={x:0,y:0,w:30,h:38,vx:0,vy:0,onG:false,coy:0,buf:0,face:1,inv:0,land:0,hurtT:0,trailT:0};
+const input={left:false,right:false,jumpHeld:false,jumpEdge:false};
+const cam={x:0,dir:1};
+const state={mode:'menu',paused:false,asking:false,screen:'scHome'};
+const run={topic:null,ch:0,hearts:3,plan:[],firstOk:0,total:0,misses:[],chSlices:0,chFirst:0};
+let safe={x:80,y:GY-38},checkpoint={x:80,y:GY-38},pendingGate=null;
+const parts=[];
+const STARS=Array.from({length:70},()=>({x:Math.random(),y:Math.random()*.62,r:.6+Math.random()*1.4,p:Math.random()*6}));
+
+function buildLevel(nGates,diff,theme){
+  const L={cols:[],solids:[],plats:[],spikes:[],slices:[],mice:[],gates:[],deco:[],runs:[],clouds:[],finish:null,theme,w:0};
+  let c=0;
+  const G_=(n,top)=>{for(let i=0;i<n;i++)L.cols[c+i]=top==null?GY:top;c+=n;};
+  const S=(x,y)=>L.slices.push({x,y,taken:false,ph:Math.random()*6.28});
+  const line=(x0,x1,y)=>{const n=Math.max(0,Math.floor((x1-x0)/42));for(let i=0;i<=n;i++)S(n?x0+(x1-x0)*i/n:x0,y);};
+  const arc=(x0,x1,yB,h,n)=>{for(let i=0;i<n;i++){const u=n===1?.5:i/(n-1);S(x0+(x1-x0)*u,yB-h*4*u*(1-u));}};
+  const crate=(col,h)=>{for(let j=1;j<=h;j++)L.solids.push({x:col*T,y:GY-j*T,w:T,h:T,crate:true});};
+  const deco=(x0,x1)=>{if(x1-x0<90)return;for(let k=R.int(1,2);k>0;k--)L.deco.push({x:R.int(x0+20,x1-20),type:R.pick(['bush','flower','flower','tuft'])});};
+  const segs={
+    flat(){const n=R.int(4,6),x0=c*T;G_(n);if(R.chance(.75))line(x0+40,c*T-40,GY-48);deco(x0,c*T);},
+    pit(){G_(2);const w=diff===0?2:R.int(2,3),x0=c*T;for(let i=0;i<w;i++)L.cols[c+i]=-1;c+=w;arc(x0-24,c*T+24,GY-48,84,w+2);G_(3);},
+    crates(){G_(2);const cc=c;G_(4);const h1=diff===0?1:R.int(1,2);crate(cc+1,h1);if(R.chance(.6)){const h2=Math.min(2,h1+1);crate(cc+2,h2);S((cc+2)*T+20,GY-h2*T-30);}else S((cc+1)*T+20,GY-h1*T-30);G_(1);},
+    step(){G_(2);const h=diff===0?1:R.int(1,2),w=R.int(3,5),x0=c*T;G_(w,GY-h*T);line(x0+24,c*T-24,GY-h*T-44);G_(2);},
+    spikes(){G_(2);const n=diff===2?R.int(2,3):R.int(1,2),sc=c;G_(n);for(let i=0;i<n;i++)L.spikes.push({x:(sc+i)*T+3,y:GY-20,w:T-6,h:20});arc(sc*T-30,c*T+30,GY-46,74,n+3);G_(3);},
+    mouse(){G_(2);const m0=c,len=R.int(6,8);G_(len);const sp=[45,62,80][diff];L.mice.push({x:(m0+len-2)*T,y:GY-22,w:30,h:22,vx:-sp,minX:m0*T+4,maxX:(m0+len)*T-34,alive:true,dead:0,ph:Math.random()*6});line(m0*T+50,(m0+len)*T-50,GY-104);G_(1);},
+    plat(){G_(2);const p0=c,w=6;for(let i=0;i<w;i++)L.cols[c+i]=-1;c+=w;L.plats.push({x:(p0+2)*T,y:GY-64,w:3*T});line((p0+2)*T+20,(p0+5)*T-20,GY-104);G_(3);}
+  };
+  const pool=diff===0?['flat','pit','crates','step','pit','mouse','crates']:diff===1?['pit','crates','step','spikes','mouse','plat','pit']:['pit','spikes','mouse','plat','crates','step','spikes','pit'];
+  const per=[2,3,3][diff];
+  G_(7);
+  for(let g=0;g<nGates;g++){
+    let prev='';
+    for(let s=0;s<per;s++){let k;do{k=R.pick(pool);}while(k===prev);prev=k;segs[k]();}
+    G_(3);L.gates.push({x:c*T+4,w:72,idx:g,state:'closed',open:0});G_(4);
+  }
+  segs[R.pick(pool)]();
+  G_(3);L.finish={x:c*T+20};G_(14);
+  L.w=c*T;
+  for(let i=0;i<L.cols.length;){if(L.cols[i]<0){i++;continue;}let j=i;while(j+1<L.cols.length&&L.cols[j+1]===L.cols[i])j++;L.runs.push({x0:i*T,x1:(j+1)*T,top:L.cols[i]});i=j+1;}
+  for(let k=0;k<7;k++)L.clouds.push({x:R.int(0,1600),y:R.int(24,150),s:.7+Math.random()*.7});
+  return L;
+}
+
+/* --- sprites --- */
+const emojiCache={};
+function emojiSprite(e){if(emojiCache[e])return emojiCache[e];const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d');x.font='72px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(e,48,52);emojiCache[e]=c;return c;}
+let sliceSpr=null;
+function makeSlice(){
+  const c=document.createElement('canvas');c.width=c.height=80;const x=c.getContext('2d');x.scale(2,2);x.lineJoin='round';
+  x.beginPath();x.moveTo(20,37);x.lineTo(5,10);x.quadraticCurveTo(20,1,35,10);x.closePath();x.fillStyle='#ffd25e';x.fill();x.lineWidth=2.4;x.strokeStyle=INK;x.stroke();
+  x.beginPath();x.moveTo(5,10);x.quadraticCurveTo(20,1,35,10);x.lineTo(33,14);x.quadraticCurveTo(20,6,7,14);x.closePath();x.fillStyle='#d98a3a';x.fill();x.stroke();
+  [[16,18,3.4],[24,20,3.1],[20,28,2.7]].forEach(([a,b,r])=>{x.beginPath();x.arc(a,b,r,0,7);x.fillStyle='#e3503b';x.fill();});
+  return c;
+}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function ell(c,x,y,rx,ry){c.beginPath();c.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),0,0,Math.PI*2);c.fill();}
+
+function drawPlayer(c,x,y,o){
+  const t=o.t||0,face=o.face||1;
+  c.save();
+  if(o.inv>0&&Math.floor(t*14)%2===0)c.globalAlpha=.35;
+  c.translate(x+15,y+38);
+  let sx=1,sy=1;if(o.land>0){sx=1+o.land*1.3;sy=1-o.land*1.3;}else if(!o.onG){sx=.93;sy=1.07;}
+  c.scale(sx,sy);
+  const running=o.onG&&Math.abs(o.vx)>25,ph=running?Math.sin(t*20):0;
+  c.fillStyle=INK;ell(c,-7+ph*3,-3-Math.max(0,ph)*2.6,6.5,4.2);ell(c,7-ph*3,-3-Math.max(0,-ph)*2.6,6.5,4.2);
+  const r=16.5,bY=-4-r-(running?Math.abs(ph)*1.2:0);
+  c.beginPath();c.arc(0,bY,r,0,Math.PI*2);
+  if(o.color==='rainbow'){const g=c.createLinearGradient(-r,bY-r,r,bY+r);['#ff5b5b','#ffb02e','#ffe14d','#5ad16b','#35b3ff','#8e6bff'].forEach((col,i)=>g.addColorStop(i/5,col));c.fillStyle=g;}else c.fillStyle=o.color||'#ff8a3d';
+  c.fill();c.lineWidth=2.6;c.strokeStyle=INK;c.stroke();
+  c.fillStyle='rgba(255,255,255,.3)';ell(c,-face*6,bY-7,5,3.4);
+  c.fillStyle='rgba(255,90,140,.45)';ell(c,face*1,bY+6,3,2);ell(c,face*13,bY+6,2.6,1.9);
+  const blink=Math.sin(t*1.7+1)>.985?.15:1;
+  [face*2.5,face*11].forEach(ex=>{c.fillStyle='#fff';ell(c,ex,bY-2,4.6,5.8*blink);c.lineWidth=1.5;c.stroke();c.fillStyle=INK;ell(c,ex+face*1.6,bY-1.4,2.3,2.9*blink);});
+  drawHat(c,o.hat,face,bY,r);
+  c.restore();
+}
+function drawHat(c,hat,face,bY,r){
+  if(!hat||hat==='none')return;
+  if(hat==='cap'){
+    c.save();c.strokeStyle=INK;c.lineWidth=2.3;
+    c.beginPath();c.arc(0,bY-1,r+1,Math.PI*1.12,Math.PI*1.88);c.closePath();c.fillStyle='#4b5bd6';c.fill();c.stroke();
+    c.beginPath();c.ellipse(face*15,bY-r*.58,10.5,3.4,face*.12,0,Math.PI*2);c.fillStyle='#3443b8';c.fill();c.stroke();
+    c.beginPath();c.arc(0,bY-r-1.6,2.4,0,Math.PI*2);c.fillStyle='#ffd166';c.fill();
+    c.restore();return;
+  }
+  const H=HATS[hat];if(!H)return;
+  c.save();c.translate(face*H.dx,bY-r+H.dy);c.rotate(face*H.r);c.drawImage(emojiSprite(H.e),-H.s/2,-H.s/2,H.s,H.s);c.restore();
+}
+function drawMouse(c,m,t){
+  const dir=m.vx>=0?1:-1;
+  c.save();c.translate(m.x+m.w/2,m.y+m.h);
+  if(!m.alive){c.globalAlpha=Math.max(0,1-m.dead*2);c.scale(1+m.dead,Math.max(.1,1-m.dead*3));}
+  c.scale(dir,1);c.lineWidth=2;c.strokeStyle=INK;
+  c.beginPath();c.moveTo(-12,-8);c.quadraticCurveTo(-24,-20,-27,-6);c.strokeStyle='#e58fa8';c.lineWidth=2.5;c.stroke();
+  c.strokeStyle=INK;c.lineWidth=2;
+  const lp=Math.sin(m.ph)*3;c.beginPath();c.moveTo(-6,-3);c.lineTo(-6+lp,0);c.moveTo(6,-3);c.lineTo(6-lp,0);c.stroke();
+  c.beginPath();c.ellipse(0,-10,15,9.5,0,0,Math.PI*2);c.fillStyle='#aab0c6';c.fill();c.stroke();
+  c.beginPath();c.arc(12,-13,7.5,0,Math.PI*2);c.fill();c.stroke();
+  c.beginPath();c.arc(9,-21,5,0,Math.PI*2);c.fillStyle='#ffc2d4';c.fill();c.stroke();
+  c.fillStyle=INK;ell(c,14,-15,1.8,2.2);c.fillStyle='#ff6f91';ell(c,19.5,-12,2.2,2);
+  c.restore();
+}
+function drawGate(c,g,t,total){
+  const x=g.x,w=g.w,top=GY-GATE_H,dx=x+(w-DOOR_W)/2;
+  c.lineWidth=3;c.strokeStyle=INK;c.fillStyle='#c3bde0';
+  rr(c,x,top,w,GATE_H+4,6);c.fill();c.stroke();
+  for(let i=0;i<3;i++){c.fillStyle='#c3bde0';c.fillRect(x+i*w/3+3,top-14,w/3-6,16);c.strokeRect(x+i*w/3+3,top-14,w/3-6,16);}
+  c.strokeStyle='rgba(44,40,80,.22)';c.lineWidth=2;
+  for(let yy=top+24,row=0;yy<GY-4;yy+=24,row++){c.beginPath();c.moveTo(x+3,yy);c.lineTo(x+w-3,yy);c.stroke();const off=row%2?w/2:w/4;c.beginPath();c.moveTo(x+off,yy-24);c.lineTo(x+off,yy);c.stroke();}
+  const ey=GY-DOOR_H-36,ex=x+w/2;
+  c.beginPath();c.arc(ex,ey,17,0,Math.PI*2);c.fillStyle='#fff';c.fill();
+  for(let i=0;i<total;i++){c.beginPath();c.moveTo(ex,ey);c.arc(ex,ey,15,-Math.PI/2+i*2*Math.PI/total,-Math.PI/2+(i+1)*2*Math.PI/total);c.closePath();c.fillStyle=i<=g.idx?'#ffc83d':'#fff';c.fill();c.lineWidth=1.6;c.strokeStyle=INK;c.stroke();}
+  c.beginPath();c.arc(ex,ey,17,0,Math.PI*2);c.lineWidth=2.6;c.stroke();
+  const arch=()=>{c.beginPath();c.moveTo(dx,GY);c.lineTo(dx,GY-DOOR_H+DOOR_W/2);c.arc(dx+DOOR_W/2,GY-DOOR_H+DOOR_W/2,DOOR_W/2,Math.PI,0);c.lineTo(dx+DOOR_W,GY);c.closePath();};
+  arch();c.fillStyle='#3a2d55';c.fill();
+  c.save();arch();c.clip();
+  const oy=-g.open*DOOR_H;c.fillStyle='#c27d3e';c.fillRect(dx,GY-DOOR_H+oy,DOOR_W,DOOR_H);
+  c.strokeStyle='rgba(44,40,80,.45)';c.lineWidth=2;for(let i=1;i<3;i++){c.beginPath();c.moveTo(dx+i*DOOR_W/3,GY-DOOR_H+oy);c.lineTo(dx+i*DOOR_W/3,GY+oy);c.stroke();}
+  c.fillStyle='#ffd166';c.beginPath();c.arc(dx+DOOR_W-9,GY-DOOR_H/2+oy,3.5,0,7);c.fill();
+  c.restore();arch();c.lineWidth=3;c.strokeStyle=INK;c.stroke();
+  if(g.state==='closed'&&Math.abs((P.x+P.w)-x)<300&&state.mode==='play'){
+    const by=GY-150+Math.sin(t*4)*5,bx=x-30;
+    c.beginPath();c.arc(bx,by,17,0,Math.PI*2);c.fillStyle='#fff';c.fill();c.lineWidth=2.5;c.strokeStyle=INK;c.stroke();
+    c.beginPath();c.moveTo(bx+8,by+12);c.lineTo(bx+16,by+22);c.lineTo(bx+15,by+9);c.fillStyle='#fff';c.fill();
+    c.fillStyle=INK;c.font='800 22px Rubik, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('?',bx,by+1);
+  }
+}
+function drawFlag(c,f,t){
+  const x=f.x,top=GY-214;
+  c.fillStyle='#ece9f7';c.strokeStyle=INK;c.lineWidth=2.5;rr(c,x-3,top,6,214,3);c.fill();c.stroke();
+  c.beginPath();c.arc(x,top-6,7,0,7);c.fillStyle='#ffc83d';c.fill();c.stroke();
+  const wv=Math.sin(t*5)*5;c.beginPath();c.moveTo(x+3,top+6);c.quadraticCurveTo(x+34,top+14+wv,x+66,top+26);c.quadraticCurveTo(x+34,top+38-wv,x+3,top+48);c.closePath();c.fillStyle='#ff6b5b';c.fill();c.stroke();
+  if(sliceSpr)c.drawImage(sliceSpr,x+16,top+12,24,24);
+  c.fillStyle='#8a7fb8';rr(c,x-16,GY-10,32,10,4);c.fill();c.stroke();
+}
+function drawDeco(c,Lv,dd,th,t){
+  const col=Math.floor(dd.x/T);const top=Lv.cols[col];if(top==null||top<0)return;
+  if(dd.type==='bush'){c.fillStyle=th.grassD;[[0,-10,13],[14,-14,15],[28,-9,12]].forEach(([a,b,r])=>{c.beginPath();c.arc(dd.x+a,top+b,r,0,7);c.fill();});}
+  else if(dd.type==='flower'){c.strokeStyle='#3e9b33';c.lineWidth=2.5;c.beginPath();c.moveTo(dd.x,top);c.lineTo(dd.x,top-18);c.stroke();const pc=['#ff6fae','#ffd166','#fff','#b19dff'][Math.floor(dd.x)%4];c.fillStyle=pc;for(let i=0;i<5;i++){const a=i*1.2566+t*.4;ell(c,dd.x+Math.cos(a)*5,top-20+Math.sin(a)*5,3.6,3.6);}c.fillStyle='#ffb02e';ell(c,dd.x,top-20,2.8,2.8);}
+  else{c.strokeStyle=th.grassD;c.lineWidth=2.5;c.beginPath();for(let i=-2;i<=2;i++){c.moveTo(dd.x+i*4,top);c.lineTo(dd.x+i*5,top-10-Math.abs(i));}c.stroke();}
+}
+let skyG=null,skyKey='';
+function hills(par,base,amp,color,seed){
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(0,VH);
+  const off=cam.x*par;
+  for(let x=0;x<=VW+16;x+=16){const wx=x+off;ctx.lineTo(x,base-amp*(.55+.45*Math.sin(wx*.0042+seed))-amp*.28*Math.sin(wx*.011+seed*2));}
+  ctx.lineTo(VW,VH);ctx.closePath();ctx.fill();
+}
+function render(t,dt){
+  const Lv=L||menuL;if(!Lv)return;
+  const th=THEMES[Lv.theme||0];
+  ctx.setTransform(DPR*SCALE,0,0,DPR*SCALE,0,0);
+  const key=Lv.theme+'|'+VH;if(key!==skyKey){skyG=ctx.createLinearGradient(0,0,0,VH);skyG.addColorStop(0,th.sky[0]);skyG.addColorStop(1,th.sky[1]);skyKey=key;}
+  ctx.fillStyle=skyG;ctx.fillRect(0,0,VW,VH);
+  const camTop=WH-VH,gs=GY-camTop;
+  if(th.night){ctx.fillStyle='#fff';for(const s of STARS){ctx.globalAlpha=.4+.6*Math.abs(Math.sin(t*1.3+s.p));ctx.beginPath();ctx.arc(s.x*VW,s.y*(gs-60),s.r,0,7);ctx.fill();}ctx.globalAlpha=1;}
+  const sunX=VW*.82,sunY=Math.max(64,gs-300);
+  ctx.fillStyle=th.night?'rgba(255,246,201,.18)':'rgba(255,255,255,.35)';ctx.beginPath();ctx.arc(sunX,sunY,58,0,7);ctx.fill();
+  ctx.fillStyle=th.sun;ctx.beginPath();ctx.arc(sunX,sunY,42,0,7);ctx.fill();
+  if(th.night){ctx.fillStyle=th.sky[0];ctx.beginPath();ctx.arc(sunX+16,sunY-10,36,0,7);ctx.fill();}
+  ctx.fillStyle=th.cloud;
+  for(const cl of Lv.clouds){const span=VW+400,sx=(((cl.x-cam.x*.15+t*7)%span)+span)%span-200,sy=cl.y+Math.max(0,(VH-WH))*.25;const s=cl.s;ctx.beginPath();ctx.arc(sx,sy,22*s,0,7);ctx.arc(sx+24*s,sy-11*s,26*s,0,7);ctx.arc(sx+50*s,sy,21*s,0,7);ctx.arc(sx+25*s,sy+6*s,22*s,0,7);ctx.fill();}
+  hills(.25,gs-60,70,th.hills[0],1.3);hills(.5,gs-14,44,th.hills[1],4.1);
+  ctx.save();ctx.translate(-Math.round(cam.x*4)/4,-camTop);
+  const x0=cam.x-120,x1=cam.x+VW+120;
+  for(const d of Lv.deco)if(d.x>x0&&d.x<x1)drawDeco(ctx,Lv,d,th,t);
+  for(const r of Lv.runs){
+    if(r.x1<x0||r.x0>x1)continue;const w=r.x1-r.x0;
+    ctx.fillStyle=th.dirt;ctx.fillRect(r.x0,r.top,w,WH-r.top+2);
+    ctx.fillStyle=th.dirtD;for(let x=r.x0+12;x<r.x1-8;x+=28){const yy=r.top+30+((x*7)%34);ctx.fillRect(x,yy,7,4);if(yy+40<WH)ctx.fillRect(x+10,yy+36,5,4);}
+    ctx.fillStyle=th.grass;ctx.fillRect(r.x0-2,r.top,w+4,12);
+    for(let x=r.x0;x<r.x1;x+=12){ctx.beginPath();ctx.arc(x+6,r.top+12,6,0,Math.PI);ctx.fill();}
+    ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(r.x0-2,r.top,w+4,3);
+    ctx.strokeStyle=INK;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(r.x0,WH+2);ctx.lineTo(r.x0,r.top);ctx.lineTo(r.x1,r.top);ctx.lineTo(r.x1,WH+2);ctx.stroke();
+  }
+  for(const p of Lv.plats){if(p.x+p.w<x0||p.x>x1)continue;ctx.fillStyle='#c9894c';ctx.strokeStyle=INK;ctx.lineWidth=2.5;rr(ctx,p.x,p.y,p.w,16,6);ctx.fill();ctx.stroke();ctx.fillStyle=th.grass;rr(ctx,p.x+2,p.y+1,p.w-4,5,3);ctx.fill();}
+  for(const s of Lv.solids){if(s.x+s.w<x0||s.x>x1)continue;ctx.fillStyle=th.crate;ctx.strokeStyle=INK;ctx.lineWidth=2.5;rr(ctx,s.x+1,s.y+1,s.w-2,s.h-2,4);ctx.fill();ctx.stroke();ctx.strokeStyle='rgba(44,40,80,.55)';ctx.lineWidth=2;ctx.strokeRect(s.x+6,s.y+6,s.w-12,s.h-12);ctx.beginPath();ctx.moveTo(s.x+6,s.y+6);ctx.lineTo(s.x+s.w-6,s.y+s.h-6);ctx.moveTo(s.x+s.w-6,s.y+6);ctx.lineTo(s.x+6,s.y+s.h-6);ctx.stroke();}
+  for(const s of Lv.spikes){if(s.x+s.w<x0||s.x>x1)continue;ctx.fillStyle='#d6d2ea';ctx.strokeStyle=INK;ctx.lineWidth=1.8;for(let xx=s.x;xx<s.x+s.w-1;xx+=s.w/3){ctx.beginPath();ctx.moveTo(xx,s.y+s.h);ctx.lineTo(xx+s.w/6,s.y);ctx.lineTo(xx+s.w/3,s.y+s.h);ctx.closePath();ctx.fill();ctx.stroke();}}
+  for(const g of Lv.gates){if(g.x+g.w<x0||g.x>x1)continue;drawGate(ctx,g,t,Lv.gates.length);}
+  if(Lv.finish&&Lv.finish.x>x0&&Lv.finish.x<x1)drawFlag(ctx,Lv.finish,t);
+  if(sliceSpr)for(const s of Lv.slices){if(s.taken||s.x<x0||s.x>x1)continue;const sp=Math.cos(t*3+s.ph),bob=Math.sin(t*2.4+s.ph)*3;ctx.save();ctx.translate(s.x,s.y+bob);ctx.scale(Math.max(.18,Math.abs(sp)),1);ctx.drawImage(sliceSpr,-14,-14,28,28);ctx.restore();}
+  for(const m of Lv.mice){if(m.x<x0||m.x>x1||(!m.alive&&m.dead>.6))continue;drawMouse(ctx,m,t);}
+  if(state.mode==='play'&&L)drawPlayer(ctx,P.x,P.y,{t,face:P.face,vx:P.vx,onG:P.onG,inv:P.inv,land:P.land,color:colorOf(profile.eq.color),hat:profile.eq.hat});
+  for(const p of parts){
+    const a=clamp(p.life/p.max,0,1);ctx.globalAlpha=a;
+    if(p.txt){ctx.font='800 20px Rubik, sans-serif';ctx.direction=/[\u0590-\u05FF]/.test(p.txt)?'rtl':'ltr';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=4;ctx.strokeStyle='#fff';ctx.strokeText(p.txt,p.x,p.y);ctx.fillStyle=p.c;ctx.fillText(p.txt,p.x,p.y);}
+    else if(p.k==='star'){ctx.fillStyle=p.c;ctx.beginPath();const r=p.r*(.6+a*.6);ctx.moveTo(p.x,p.y-r*2);ctx.quadraticCurveTo(p.x,p.y,p.x+r*2,p.y);ctx.quadraticCurveTo(p.x,p.y,p.x,p.y+r*2);ctx.quadraticCurveTo(p.x,p.y,p.x-r*2,p.y);ctx.quadraticCurveTo(p.x,p.y,p.x,p.y-r*2);ctx.fill();}
+    else if(p.k==='bubble'){ctx.strokeStyle=p.c;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(p.x,p.y,p.r*(1.4-a*.4),0,7);ctx.stroke();}
+    else if(p.k==='heart'){ctx.fillStyle=p.c;const r=p.r;ctx.beginPath();ctx.moveTo(p.x,p.y+r);ctx.bezierCurveTo(p.x-r*1.8,p.y-r*.4,p.x-r*.6,p.y-r*1.8,p.x,p.y-r*.5);ctx.bezierCurveTo(p.x+r*.6,p.y-r*1.8,p.x+r*1.8,p.y-r*.4,p.x,p.y+r);ctx.fill();}
+    else{ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,7);ctx.fill();}
+  }
+  ctx.globalAlpha=1;ctx.restore();
+}
+function burst(x,y,colors,n,spd){for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(spd||200)*(.35+Math.random()*.65);parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-90,g:520,life:.8,max:.8,c:R.pick(colors),r:2.5+Math.random()*3});}}
+function floatTxt(x,y,txt,c){parts.push({x,y,vx:0,vy:-55,g:0,life:1.1,max:1.1,txt,c:c||'#24214a'});}
+function updParts(dt){for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;if(p.life<=0){parts.splice(i,1);continue;}p.vy+=(p.g||0)*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}}
+
+/* --- physics --- */
+const hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+function gateRects(g){
+  const top=GY-GATE_H-14;
+  if(g.state!=='open')return [{x:g.x,y:top,w:g.w,h:GY-top,gate:g}];
+  return [{x:g.x,y:top,w:g.w,h:GY-DOOR_H-top}];
+}
+function solidsAt(x0,x1){
+  const out=[],i0=Math.floor(x0/T),i1=Math.floor(x1/T);
+  for(let i=i0;i<=i1;i++){if(i<0||i>=L.cols.length)out.push({x:i*T,y:-3000,w:T,h:6000});else if(L.cols[i]>=0)out.push({x:i*T,y:L.cols[i],w:T,h:WH*4});}
+  for(const s of L.solids)if(s.x<x1+1&&s.x+s.w>x0-1)out.push(s);
+  for(const g of L.gates)if(g.x<x1+1&&g.x+g.w>x0-1)gateRects(g).forEach(r=>out.push(r));
+  return out;
+}
+function step(dt){
+  const p=P;
+  p.inv=Math.max(0,p.inv-dt);p.coy-=dt;p.buf-=dt;p.land=Math.max(0,p.land-dt);
+  if(input.jumpEdge){p.buf=PH.buffer;input.jumpEdge=false;}
+  let ax=0;if(input.left&&!input.right)ax=-1;else if(input.right&&!input.left)ax=1;
+  if(p.hurtT>0){p.hurtT-=dt;ax=0;}
+  if(ax){p.vx+=ax*(p.onG?PH.acc:PH.air)*dt;p.face=ax;}
+  else if(p.onG){const f=PH.fric*dt;p.vx=Math.abs(p.vx)<=f?0:p.vx-Math.sign(p.vx)*f;}
+  p.vx=clamp(p.vx,-PH.maxV,PH.maxV);
+  if(p.buf>0&&(p.onG||p.coy>0)){p.vy=-PH.jump;p.buf=0;p.coy=0;p.onG=false;SFX.jump();}
+  p.vy=Math.min(PH.maxFall,p.vy+PH.g*dt);
+  p.x+=p.vx*dt;
+  for(const s of solidsAt(p.x-2,p.x+p.w+2)){
+    if(!hit(p,s))continue;
+    if(s.gate&&s.gate.state==='closed'&&p.vx>=0)pendingGate=s.gate;
+    if(p.vx>0)p.x=s.x-p.w;else if(p.vx<0)p.x=s.x+s.w;else{const l=p.x+p.w-s.x,r=s.x+s.w-p.x;p.x+=l<r?-l:r;}
+    p.vx=0;
+  }
+  const pb=p.y+p.h;p.y+=p.vy*dt;const wasG=p.onG;p.onG=false;
+  for(const s of solidsAt(p.x,p.x+p.w)){
+    if(!hit(p,s))continue;
+    if(p.vy>0){p.y=s.y-p.h;p.vy=0;p.onG=true;}else if(p.vy<0){p.y=s.y+s.h;p.vy=0;}
+  }
+  if(p.vy>=0)for(const pl of L.plats){if(p.x+p.w>pl.x+2&&p.x<pl.x+pl.w-2&&pb<=pl.y+.5&&p.y+p.h>=pl.y){p.y=pl.y-p.h;p.vy=0;p.onG=true;}}
+  if(p.onG){p.coy=PH.coyote;if(!wasG)p.land=.12;const ci=Math.floor((p.x+p.w/2)/T);if(L.cols[ci]>=0&&L.cols[ci-1]>=0&&L.cols[ci+1]>=0&&Math.abs(p.y+p.h-L.cols[ci])<1)safe={x:ci*T+(T-p.w)/2,y:L.cols[ci]-p.h};}
+  if(pendingGate){const g=pendingGate;pendingGate=null;askGate(g);return;}
+  if(p.y>WH+60){pitFall();return;}
+  for(const m of L.mice){
+    if(!m.alive){m.dead+=dt;continue;}
+    m.x+=m.vx*dt;m.ph+=dt*12;
+    if(m.x<m.minX){m.x=m.minX;m.vx=Math.abs(m.vx);}if(m.x>m.maxX){m.x=m.maxX;m.vx=-Math.abs(m.vx);}
+    if(hit(p,m)){
+      if(p.vy>0&&(p.y+p.h)-m.y<17){m.alive=false;m.dead=0;p.vy=-560;SFX.stomp();burst(m.x+m.w/2,m.y+8,['#aab0c6','#fff','#ffc2d4'],12,180);giveSlices(2,m.x+m.w/2,m.y-14,'+2 🍕');}
+      else hurt(m.x+m.w/2);
+    }
+  }
+  const sp={x:p.x+5,y:p.y+6,w:p.w-10,h:p.h-6};
+  for(const s of L.spikes)if(hit(sp,s)){hurt(s.x+s.w/2);break;}
+  for(const s of L.slices){if(!s.taken&&Math.abs(p.x+p.w/2-s.x)<22&&Math.abs(p.y+p.h/2-s.y)<28){s.taken=true;giveSlices(1,s.x,s.y);burst(s.x,s.y,['#ffd25e','#ff8a3d','#fff'],6,120);}}
+  if(profile.eq.trail!=='none'&&p.onG&&Math.abs(p.vx)>60){p.trailT-=dt;if(p.trailT<=0){p.trailT=.06;spawnTrail(p.x+p.w/2-p.face*14,p.y+p.h-8);}}
+  if(L.finish&&p.x+p.w>L.finish.x-2)finishChapter();
+}
+function spawnTrail(x,y){
+  const tr=profile.eq.trail,base={x:x+(Math.random()-.5)*6,y:y+(Math.random()-.5)*8,vx:-P.face*20,vy:-30-Math.random()*30,g:0,life:.55,max:.55,r:3+Math.random()*2};
+  if(tr==='sparkle')parts.push(Object.assign(base,{k:'star',c:R.pick(['#ffd166','#fff3a8','#ffffff'])}));
+  else if(tr==='bubbles')parts.push(Object.assign(base,{k:'bubble',c:'#5ab8ff',vy:-50,life:.8,max:.8}));
+  else if(tr==='hearts')parts.push(Object.assign(base,{k:'heart',c:R.pick(['#ff6fae','#ff8fc0','#ff5b7f'])}));
+  else if(tr==='rainbow')parts.push(Object.assign(base,{c:`hsl(${(performance.now()/4)%360},90%,62%)`,vy:-8,r:5,life:.45,max:.45}));
+}
+function giveSlices(n,x,y,label){profile.slices+=n;run.chSlices+=n;floatTxt(x,y-8,label||'+1 🍕','#c25e18');SFX.coin();updateHUD();save();}
+function hurt(fromX){
+  if(P.inv>0||state.paused)return;
+  run.hearts--;SFX.hurt();P.inv=1.6;P.vy=-430;P.vx=(P.x+P.w/2<fromX?-1:1)*230;P.hurtT=.25;updateHUD();
+  if(run.hearts<=0)gameOver();
+}
+function respawn(pt){P.x=pt.x;P.y=pt.y;P.vx=0;P.vy=0;P.inv=1.6;P.onG=false;}
+function pitFall(){run.hearts--;SFX.hurt();updateHUD();if(run.hearts<=0){gameOver();return;}respawn(safe);floatTxt(safe.x+15,safe.y-10,'אופס! 💦','#24214a');}
+function gameOver(){
+  state.paused=true;clearInput();
+  showMsg(`<div class="mbig">💔</div><h2>אוי! נגמרו הלבבות</h2><p>לא נורא – ממשיכים מהשער האחרון. הפיצות נשארות אצלך.</p>`,[{t:'ממשיכים ▶',cls:'sun big',fn:()=>{run.hearts=3;respawn(checkpoint);updateHUD();state.paused=false;}}]);
+}
+function clearInput(){input.left=input.right=input.jumpHeld=input.jumpEdge=false;$$('.pb').forEach(b=>b.classList.remove('down'));}
+
+/* --- run flow --- */
+function resetPlayer(){Object.assign(P,{x:2*T,y:GY-38,vx:0,vy:0,onG:false,coy:0,buf:0,face:1,inv:0,land:0,hurtT:0});safe={x:2*T,y:GY-38};checkpoint={x:2*T,y:GY-38};}
+function startTopic(id){
+  run.topic=TOPICS.find(t=>t.id===id);run.ch=0;run.firstOk=0;run.total=0;run.misses=[];
+  startChapter();
+}
+function startChapter(){
+  const t=run.topic;run.plan=t.plan==='mix'?mixPlan(run.ch):t.plan[run.ch];run.hearts=3;run.chSlices=0;run.chFirst=0;
+  L=buildLevel(run.plan.length,run.ch,run.ch);
+  resetPlayer();cam.x=0;parts.length=0;clearInput();
+  state.mode='play';state.paused=false;state.asking=false;
+  $$('.screen').forEach(s=>s.classList.remove('on'));state.screen='game';
+  $('#hud').hidden=false;$('#pad').hidden=false;$('#mm').hidden=true;$('#qm').hidden=true;
+  $('#qm').style.setProperty('--fill',t.fill);
+  updateHUD();
+  toast(`${THEMES[run.ch].emoji} עולם ${run.ch+1} מתוך 3 • ${DIFF[run.ch]}`);
+  if(!profile.tut)showTutorial();
+}
+function makeQuestion(idx){
+  const [name,variant]=run.plan[idx].split(':');
+  const diff=run.topic.plan==='mix'?(run.ch<2?1:2):run.ch;
+  return G[name](diff,variant);
+}
+function askGate(g){
+  state.asking=true;state.paused=true;clearInput();P.vx=0;
+  const q=makeQuestion(g.idx);
+  openQuestion(q,{i:g.idx+1,n:L.gates.length},res=>{
+    state.asking=false;state.paused=false;
+    run.total++;if(res.mistakes===0){run.firstOk++;run.chFirst++;}else run.misses.push(q.skill);
+    const st=profile.stats[q.skill]||(profile.stats[q.skill]={n:0,ok:0});st.n++;if(res.mistakes===0)st.ok++;
+    g.state='opening';SFX.gate();
+    giveSlices(res.reward,g.x+g.w/2,GY-170,res.reward===8?'+ פיצה שלמה 🍕':res.reward===4?'+ חצי פיצה 🍕':'+ רבע פיצה 🍕');
+    checkpoint={x:g.x+g.w+14,y:GY-P.h};
+    burst(g.x+g.w/2,GY-120,['#ffd166','#ff6b5b','#16b6a6','#7b5cff','#35b3ff'],28,280);
+    updateHUD();
+  });
+}
+function chapterPizzaLine(s){
+  if(s<=0)return 'הפעם לא אספת פרוסות.';
+  const w=Math.floor(s/8),r=s%8;
+  if(s<8)return `אספת <b>${s}</b> ${s===1?'פרוסה':'פרוסות'} = ${F(s,8)} פיצה 🍕`;
+  if(r===0)return `אספת <b>${s}</b> פרוסות = ${F(s,8)} = ${w===1?'פיצה שלמה':w+' פיצות'} 🍕`;
+  return `אספת <b>${s}</b> פרוסות = ${F(s,8)} = ${MX(w,r,8)} פיצות 🍕`;
+}
+function finishChapter(){
+  if(state.paused)return;
+  state.paused=true;clearInput();SFX.win();burst(P.x,P.y,['#ffd166','#ff6b5b','#16b6a6','#7b5cff'],30,300);
+  const last=run.ch>=2,n=L.gates.length;
+  showMsg(`<div class="mbig">🏁</div><h2>עולם ${run.ch+1} מתוך 3 – הושלם!</h2><p>נכון כבר בניסיון הראשון: <b>${run.chFirst} מתוך ${n}</b></p><div class="pzline">${chapterPizzaLine(run.chSlices)}</div>`,
+    [{t:last?'לסיכום 🏆':'לעולם הבא ▶',cls:'sun big',fn:()=>{if(last)topicDone();else{run.ch++;startChapter();}}}]);
+}
+function topicDone(){
+  const t=run.topic,ratio=run.total?run.firstOk/run.total:0,stars=ratio>=.85?3:ratio>=.65?2:1;
+  profile.stars[t.id]=Math.max(profile.stars[t.id]||0,stars);profile.last[t.id]={ok:run.firstOk,n:run.total};save();
+  const msg=stars===3?'מוכנה לנושא הזה! 💪':stars===2?'כמעט! עוד סיבוב אחד ותהיי מוכנה.':'כדאי לשחק שוב – כל פעם זה נהיה יותר קל.';
+  const sk=[...new Set(run.misses)];
+  const rev=sk.length?`<div class="review"><b>כדאי לחזור על:</b><ul>${sk.map(s=>`<li><b>${SKILL[s].name}:</b> ${SKILL[s].tip}</li>`).join('')}</ul></div>`:'';
+  const next=TOPICS.find(x=>x.id===t.id+1);
+  const btns=[];
+  if(next)btns.push({t:`לנושא הבא: ${next.title} ▶`,cls:'sun',fn:()=>startTopic(next.id)});
+  btns.push({t:'↻ עוד פעם',cls:'ghost',fn:()=>startTopic(t.id)});
+  btns.push({t:'🏠 לתפריט',cls:'sky',fn:toMenu});
+  showMsg(`<div class="mbig">🏆</div><h2>סיימת: ${t.title}!</h2><div class="rstars">${[0,1,2].map(i=>`<span class="${i<stars?'on':''}" style="animation-delay:${i*.15}s">⭐</span>`).join('')}</div><p>${msg}</p><p>נכון כבר בניסיון הראשון: <b>${run.firstOk} מתוך ${run.total}</b></p>${rev}`,btns);
+}
+function showTutorial(){
+  state.paused=true;
+  showMsg(`<h2>איך משחקים? 🎮</h2><ul class="howto">
+    <li><span class="k">◀ ▶</span> זזים ימינה ושמאלה (במקלדת: החצים)</li>
+    <li><span class="k">⤒</span> קופצים (במקלדת: רווח)</li>
+    <li><span class="k">🚪</span> מגיעים לשער ופותרים שאלה – והשער נפתח</li>
+    <li><span class="k">🍕</span> 8 פרוסות = פיצה שלמה. בפיצות קונים דברים בחנות!</li>
+    <li><span class="k">🐭</span> על עכברים קופצים מלמעלה – לא נוגעים בהם מהצד</li></ul>`,
+    [{t:'יאללה! ▶',cls:'sun big',fn:()=>{profile.tut=true;save();state.paused=false;}}]);
+}
+function pauseGame(){
+  if(state.mode!=='play'||state.paused)return;
+  state.paused=true;clearInput();
+  showMsg(`<div class="mbig">⏸️</div><h2>הפסקה</h2><p>${run.topic.emoji} ${run.topic.title} • עולם ${run.ch+1} מתוך 3</p>`,[{t:'▶ ממשיכים',cls:'sun big',fn:()=>{state.paused=false;}},{t:'🏠 יציאה לתפריט',cls:'ghost',fn:toMenu}]);
+}
+function toMenu(){
+  state.mode='menu';state.paused=false;state.asking=false;L=null;clearInput();parts.length=0;
+  $('#hud').hidden=true;$('#pad').hidden=true;$('#qm').hidden=true;$('#mm').hidden=true;
+  show('scHome');
+}
+
+/* --- HUD --- */
+function updateHUD(){
+  if(state.mode!=='play'||!L)return;
+  $('#hudHearts').textContent='❤️'.repeat(Math.max(0,run.hearts))+'🤍'.repeat(Math.max(0,3-run.hearts));
+  $('#hudPz').innerHTML=`${pieSVG(profile.slices%8,8,30)}<span>${pzHTML(profile.slices)}</span>`;
+  const opened=L.gates.filter(g=>g.state!=='closed').length;
+  $('#hudStage').innerHTML=`<span>${THEMES[run.ch].emoji}</span><span class="dn">עולם ${run.ch+1}/3 • ${DIFF[run.ch]}</span><span class="gsep"></span><span class="door">🚪</span>${F(opened,L.gates.length)}`;
+  $('#btnSound').textContent=profile.sound?'🔊':'🔇';
+}
+let toastT=0;
+function toast(html){const t=$('#toast');t.hidden=true;void t.offsetWidth;t.innerHTML=html;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true;},2700);}
+
+/* ============ messages ============ */
+function showMsg(html,buttons){
+  const card=$('#mmCard');card.innerHTML=html+`<div class="mbtns">${buttons.map((b,i)=>`<button type="button" class="btn ${b.cls||''}" data-i="${i}">${b.t}</button>`).join('')}</div>`;
+  $$('.mbtns button',card).forEach(btn=>btn.addEventListener('click',()=>{$('#mm').hidden=true;SFX.tap();buttons[+btn.dataset.i].fn();}));
+  $('#mm').hidden=false;card.scrollTop=0;
+  const f=card.querySelector('.mbtns button');if(f)setTimeout(()=>{try{f.focus({preventScroll:true});}catch(e){}},60);
+}
+
+/* ============ question modal ============ */
+const QS={q:null,mistakes:0,stepMiss:0,revealed:false,done:false,stepIdx:0,onDone:null,vals:[],slots:[],act:0,checkFn:null,sel:[]};
+function openQuestion(q,info,onDone){
+  Object.assign(QS,{q,mistakes:0,stepMiss:0,revealed:false,done:false,stepIdx:0,onDone,checkFn:null,vals:[],slots:[],act:0,sel:[null,null]});
+  $('#qGate').textContent=`שער ${info.i} מתוך ${info.n}`;
+  updTry();
+  $('#qTitle').innerHTML=q.title;
+  const sub=$('#qSub');sub.innerHTML=q.sub||'';sub.hidden=!q.sub;
+  $('#qFb').hidden=true;$('#qFoot').innerHTML='';
+  renderQ();
+  $('#qm').hidden=false;$('#qCard').scrollTop=0;
+}
+function updTry(){const m=QS.mistakes;$('#qTry').innerHTML=`ניסיון ${m+1} • ${m===0?'פיצה שלמה 🍕':m===1?'חצי פיצה 🍕':'רבע פיצה 🍕'}`;}
+function showFb(kind,emoji,html,vis){
+  const fb=$('#qFb');fb.className='fb '+kind;fb.innerHTML=`<span class="fe">${emoji}</span><div class="ft">${html}${vis?`<div class="fv">${vis}</div>`:''}</div>`;fb.hidden=false;
+  requestAnimationFrame(()=>{try{fb.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(e){}});
+}
+function wrong(msg){
+  if(QS.done)return;
+  QS.mistakes++;updTry();SFX.no();
+  const card=$('#qCard');card.classList.remove('shake');void card.offsetWidth;card.classList.add('shake');
+  const q=QS.q;
+  if(q.type==='steps'){QS.stepMiss++;if(QS.stepMiss>=2){$$('#qAns .opt').forEach(b=>{if(b.dataset.ok==='1')b.classList.add('reveal');});showFb('bad','🧐',`${msg?msg+'<br>':''}<b>התשובה מסומנת בירוק – לחצי עליה.</b>`);return;}showFb('bad','🤔',msg||q.hint||'נסי שוב!');return;}
+  if(QS.mistakes>=2){
+    if(!QS.revealed){QS.revealed=true;doReveal();}
+    const tail=q.type==='mc'?'<br><b>התשובה הנכונה מסומנת – לחצי עליה.</b>':q.type==='input'?'<br><b>עכשיו כתבי את זה במשבצות ולחצי "בדיקה".</b>':q.type==='multi'||q.type==='pick2'?'<br><b>התשובות הנכונות מסומנות – בחרי אותן ולחצי "בדיקה".</b>':q.type==='paint'?'<br><b>עכשיו צבעי ולחצי "בדיקה".</b>':'';
+    showFb('bad','🧐',`${msg?msg+'<br>':''}<b>הנה ההסבר:</b> ${q.explain}${tail}`,q.explainVis);
+  }else showFb('bad','🤔',msg||q.hint||'נסי שוב!');
+}
+function doReveal(){
+  const q=QS.q;
+  if(q.type==='mc')$$('#qAns .opt').forEach(b=>{if(b.dataset.ok==='1')b.classList.add('reveal');});
+  if(q.type==='multi')$$('#qAns [data-good="1"]').forEach(b=>b.classList.add('reveal'));
+  if(q.type==='pick2')$$('#qAns .wchip').forEach(b=>{const ri=+b.dataset.r,k=+b.dataset.k;if(k===q.ans[ri])b.classList.add('reveal');});
+}
+function right(extra){
+  if(QS.done)return;QS.done=true;SFX.ok();
+  const m=QS.mistakes,reward=m===0?8:m===1?4:2;
+  const praise=m===0?R.pick(['מעולה!','אלופה!','בול!','כל הכבוד!','וואו, בדיוק!']):R.pick(['יפה מאוד!','הצלחת!','נכון!']);
+  showFb('good',m===0?'🤩':'😊',`<b>${praise}</b> ${extra?extra+' ':''}${QS.q.explain}`);
+  $$('#qAns button, #qVis .paint').forEach(b=>{if(b.tagName==='BUTTON')b.disabled=true;});
+  const foot=$('#qFoot');foot.innerHTML='';
+  const b=el('button','btn sun big',`פותחים את השער! ${reward===8?'+ פיצה שלמה':reward===4?'+ חצי פיצה':'+ רבע פיצה'} 🍕`);b.type='button';
+  b.addEventListener('click',()=>{$('#qm').hidden=true;const cb=QS.onDone;QS.onDone=null;if(cb)cb({mistakes:m,reward});});
+  foot.appendChild(b);setTimeout(()=>{try{b.focus({preventScroll:true});b.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(e){}},80);
+}
+function renderQ(){
+  const q=QS.q,vis=$('#qVis'),ans=$('#qAns'),body=$('#qBody');
+  vis.innerHTML='';ans.innerHTML='';let two=false;
+  if(q.type==='mc'){if(q.visual){vis.innerHTML=q.visual;two=q.layout!=='pics';}renderMC(ans,q.options,q.layout,()=>right());}
+  else if(q.type==='steps'){vis.innerHTML=q.visual;two=true;renderSteps(ans);}
+  else if(q.type==='multi'){renderMulti(ans);}
+  else if(q.type==='pick2'){vis.innerHTML=q.visual||'';two=!!q.visual;renderPick2(ans);}
+  else if(q.type==='paint'){two=true;renderPaint(ans,vis);}
+  else if(q.type==='input'){two=true;renderInput(ans,vis);}
+  vis.hidden=!vis.innerHTML;body.classList.toggle('two',two&&!vis.hidden);
+}
+function renderMC(box,options,layout,onRight){
+  const wrap=el('div','opts '+(layout==='pics'?'grid':layout||'grid'));
+  options.forEach(o=>{
+    const b=el('button','opt'+(layout==='pics'?' pic':''),o.html);b.type='button';b.dataset.ok=o.correct?'1':'0';
+    b.addEventListener('click',()=>{if(QS.done||b.classList.contains('no'))return;if(o.correct){b.classList.remove('reveal');b.classList.add('ok');onRight();}else{b.classList.add('no');wrong(o.why);}});
+    wrap.appendChild(b);
+  });
+  box.appendChild(wrap);
+}
+function renderSteps(box){
+  const q=QS.q,trail=el('div','trail'),sb=el('div','stepbox');box.appendChild(trail);box.appendChild(sb);
+  const show=()=>{
+    const s=q.steps[QS.stepIdx];QS.stepMiss=0;
+    sb.innerHTML=`<div class="stepn">צעד ${QS.stepIdx+1} מתוך ${q.steps.length}</div><div class="stepq">${s.q}</div>`;
+    renderMC(sb,s.options,s.layout||'grid',()=>{
+      if(s.done)trail.insertAdjacentHTML('beforeend',`<span class="tchip">✔ ${s.done}</span>`);
+      QS.stepIdx++;
+      if(QS.stepIdx>=q.steps.length)right();else{SFX.tap();setTimeout(()=>{$('#qFb').hidden=true;show();},380);}
+    });
+  };
+  show();
+}
+function renderMulti(box){
+  const q=QS.q,wrap=el('div',q.flags?'flags':'chips'),cols=['#ff9a7a','#8ecbff','#ffd166','#7bdcb5','#c3a6ff','#ffb3d1'];
+  q.items.forEach((it,i)=>{
+    const b=el('button',q.flags?'flag':'chip',q.flags?`<span class="ll">${it.letter}</span>${it.html}`:it.html);b.type='button';b.dataset.good=it.good?'1':'0';
+    if(q.flags)b.style.setProperty('--fc',cols[i%cols.length]);
+    b.addEventListener('click',()=>{if(QS.done)return;b.classList.toggle('sel');b.classList.remove('wrongsel');SFX.tap();});
+    wrap.appendChild(b);
+  });
+  box.appendChild(wrap);
+  const chk=el('button','btn sun wide','✓ בדיקה');chk.type='button';box.appendChild(chk);
+  const check=()=>{
+    if(QS.done)return;const btns=$$('#qAns '+(q.flags?'.flag':'.chip'));
+    let extra=0,miss=0;btns.forEach(b=>{const s=b.classList.contains('sel'),g=b.dataset.good==='1';if(s&&!g){extra++;b.classList.add('wrongsel');}if(!s&&g)miss++;});
+    if(!btns.some(b=>b.classList.contains('sel'))){showFb('bad','👆','עוד לא בחרת אף שבר.');return;}
+    if(!extra&&!miss){right(q.flags?`המילה הסודית: <span class="secret">${q.word}</span> 🎉<br>`:'');return;}
+    wrong((extra?(extra===1?'בחרת שבר אחד שלא מתאים (מסומן באדום). ':`בחרת ${extra} שברים שלא מתאימים (מסומנים באדום). `):'')+(miss?(miss===1?'חסר עוד שבר אחד. ':`חסרים עוד ${miss} שברים. `):'')+(q.hint||''));
+  };
+  chk.addEventListener('click',check);QS.checkFn=check;
+}
+function renderPick2(box){
+  const q=QS.q,pv=el('div','pv');
+  const upd=()=>{const t=q.rows.map((r,ri)=>{const it=r.items.find(x=>x.key===QS.sel[ri]);return it?it.html:'<span class="gap">___</span>';});pv.innerHTML=t.join(' ');};
+  box.appendChild(pv);
+  q.rows.forEach((row,ri)=>{
+    const w=el('div','wrow',`<div class="wl">${row.label}</div>`),cs=el('div','wchips');
+    row.items.forEach(it=>{const b=el('button','wchip',it.html);b.type='button';b.dataset.r=ri;b.dataset.k=it.key;
+      b.addEventListener('click',()=>{if(QS.done)return;QS.sel[ri]=it.key;$$('.wchip',cs).forEach(x=>x.classList.toggle('sel',x===b));SFX.tap();upd();});cs.appendChild(b);});
+    w.appendChild(cs);box.appendChild(w);
+  });
+  upd();
+  const chk=el('button','btn sun wide','✓ בדיקה');chk.type='button';box.appendChild(chk);
+  const check=()=>{if(QS.done)return;if(QS.sel[0]==null||QS.sel[1]==null){showFb('bad','👆','בחרי מילה אחת בכל שורה.');return;}const r=q.check(QS.sel);if(!r)right();else wrong(r.msg);};
+  chk.addEventListener('click',check);QS.checkFn=check;
+}
+function renderPaint(box,vis){
+  const q=QS.q,p=q.paint;
+  vis.innerHTML=(p.ref?`<div class="refcap">${p.refCap||''}</div>${p.ref}<div class="refcap">⬇</div>`:'')+svgShapes(Object.assign({shape:p.shape,d:p.d,wholes:p.wholes,filled:0,interactive:true},p.extra||{}));
+  const svg=vis.querySelector('svg.paint'),cnt=el('div','pcount');
+  const count=()=>svg.querySelectorAll('.pt.on').length;
+  const upd=()=>{const c=count();cnt.innerHTML=`צבעת: <b>${c}</b> ${c===1?'חלק':'חלקים'}`;};
+  svg.addEventListener('pointerdown',e=>{const t=e.target.closest('[data-i]');if(!t||QS.done)return;e.preventDefault();t.classList.toggle('on');SFX.tap();upd();});
+  box.appendChild(cnt);upd();
+  const row=el('div','row2'),chk=el('button','btn sun','✓ בדיקה'),clr=el('button','btn ghost','ניקוי');chk.type=clr.type='button';
+  row.appendChild(chk);row.appendChild(clr);box.appendChild(row);
+  const check=()=>{if(QS.done)return;const c=count();if(c===0){showFb('bad','👆','עוד לא צבעת אף חלק. לחצי על החלקים.');return;}const m=q.check(c);if(!m)right();else wrong(m);};
+  chk.addEventListener('click',check);clr.addEventListener('click',()=>{if(QS.done)return;svg.querySelectorAll('.pt.on').forEach(x=>x.classList.remove('on'));upd();});
+  QS.checkFn=check;
+}
+function renderInput(box,vis){
+  const q=QS.q;
+  QS.vals=q.fields.map(f=>({w:'',n:f.fixN!=null?String(f.fixN):'',d:f.fixD!=null?String(f.fixD):''}));
+  QS.slots=[];
+  q.fields.forEach((f,fi)=>{if(f.kind==='mixed'||f.kind==='whole')QS.slots.push({fi,p:'w'});if(f.kind!=='whole'){if(f.fixN==null)QS.slots.push({fi,p:'n'});if(f.fixD==null)QS.slots.push({fi,p:'d'});}});
+  QS.act=0;
+  const eq=el('div','eq');eq.dir=q.eqDir||'ltr';
+  (q.eq||[{t:'f',i:0}]).forEach(t=>{
+    if(t.t==='f')eq.appendChild(fieldEl(t.i));
+    else if(t.t==='gap')eq.appendChild(el('span','gapx'));
+    else{const s=el('span',t.t==='op'?'op':'tok',t.h);s.dir='ltr';eq.appendChild(s);}
+  });
+  if(q.visual){vis.innerHTML=q.visual;box.appendChild(eq);}else vis.appendChild(eq);
+  const kp=el('div','kp');kp.dir='ltr';
+  ['1','2','3','4','5','6','7','8','9','⌫','0','next'].forEach(k=>{const b=el('button',k==='⌫'||k==='next'?'fn':'',k==='next'?'הבא ⇥':k==='⌫'?'⌫ מחיקה':k);b.type='button';b.addEventListener('click',()=>keyIn(k));kp.appendChild(b);});
+  box.appendChild(kp);
+  const chk=el('button','btn sun wide','✓ בדיקה');chk.type='button';chk.addEventListener('click',checkInput);box.appendChild(chk);
+  QS.checkFn=checkInput;refreshSlots();
+}
+function fieldEl(fi){
+  const f=QS.q.fields[fi],wrap=el('div','fld'),inner=el('div','fin');inner.dir='ltr';wrap.dataset.f=fi;
+  if(f.kind==='whole'||f.kind==='mixed')inner.appendChild(slotEl(fi,'w',f.kind==='mixed'));
+  if(f.kind!=='whole'){const fr=el('div','ffr');fr.appendChild(slotEl(fi,'n'));fr.appendChild(el('div','fbar'));fr.appendChild(slotEl(fi,'d'));inner.appendChild(fr);}
+  wrap.appendChild(inner);if(f.label)wrap.appendChild(el('div','flbl',f.label));
+  return wrap;
+}
+function slotEl(fi,p,big){
+  const f=QS.q.fields[fi],fixed=(p==='n'&&f.fixN!=null)||(p==='d'&&f.fixD!=null);
+  const b=el(fixed?'div':'button','slot'+(fixed?' fixed':'')+(big?' big':''));b.dataset.f=fi;b.dataset.p=p;
+  if(!fixed){b.type='button';b.setAttribute('aria-label',p==='w'?'שלם':p==='n'?'מונה':'מכנה');b.addEventListener('click',()=>{if(QS.done)return;QS.act=QS.slots.findIndex(s=>s.fi===fi&&s.p===p);refreshSlots();});}
+  return b;
+}
+function refreshSlots(){
+  const a=QS.slots[QS.act];
+  $$('#qm .slot').forEach(s=>{const fi=+s.dataset.f,p=s.dataset.p;s.textContent=QS.vals[fi]?QS.vals[fi][p]:'';s.classList.toggle('act',!s.classList.contains('fixed')&&!!a&&a.fi===fi&&a.p===p&&!QS.done);});
+}
+function keyIn(k){
+  if(QS.done||!QS.slots.length)return;
+  const s=QS.slots[QS.act];if(!s)return;const cur=QS.vals[s.fi][s.p];
+  if(k==='⌫'){if(cur===''&&QS.act>0)QS.act--;else QS.vals[s.fi][s.p]=cur.slice(0,-1);}
+  else if(k==='next')QS.act=(QS.act+1)%QS.slots.length;
+  else QS.vals[s.fi][s.p]=cur.length>=2?k:cur+k;
+  $$('#qm .slot.bad').forEach(x=>x.classList.remove('bad'));
+  SFX.tap();refreshSlots();
+}
+function checkInput(){
+  if(QS.done)return;
+  const empty=QS.slots.find(s=>QS.vals[s.fi][s.p]==='');
+  if(empty){QS.act=QS.slots.indexOf(empty);refreshSlots();showFb('bad','✏️','חסר מספר באחת המשבצות.');return;}
+  const v=QS.vals.map(x=>({w:+x.w||0,n:+x.n||0,d:+x.d||0}));
+  const r=QS.q.check(v);
+  if(!r){right();refreshSlots();return;}
+  if(r.bad)r.bad.forEach(fi=>$$(`#qm .slot[data-f="${fi}"]:not(.fixed)`).forEach(x=>x.classList.add('bad')));
+  wrong(r.msg);
+}
+
+/* ============ screens ============ */
+function show(id){
+  $$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));state.screen=id;
+  if(id==='scHome')renderHome();if(id==='scTopics')renderTopics();if(id==='scShop')renderShop();if(id==='scLab')renderLab();
+  const s=$('#'+id);if(s)s.scrollTop=0;
+}
+let titleDone=false;
+function renderHome(){
+  if(!titleDone){titleDone=true;const cols=['#ff6b5b','#ffb31a','#16b6a6','#7b5cff','#35b3ff','#ff6fae'],rots=[-4,3,-2,4,-3,2];
+    $('#t2').innerHTML=[...'השברים'].map((ch,i)=>`<span style="--k:${cols[i%6]};--r:${rots[i%6]}deg;--i:${i}">${ch}</span>`).join('');$('#logoBox').innerHTML=pizzaLogo();}
+  $('#homeWallet').innerHTML=walletHTML();
+}
+function renderTopics(){
+  $('#topWallet').innerHTML=walletHTML();
+  $('#tgrid').innerHTML=TOPICS.map(t=>{const s=profile.stars[t.id]||0,l=profile.last[t.id];
+    return `<button type="button" class="tcard" data-t="${t.id}" style="--tc:${t.c}">${t.key?'<span class="tkey">🎯 חשוב לבוחן</span>':''}<span class="tnum">${t.id}</span><span class="tinfo"><b>${t.emoji} ${t.title}</b><small>${t.sub}</small><span class="tstars">${[0,1,2].map(i=>`<i class="${i<s?'on':''}">⭐</i>`).join('')}</span>${l?`<em>בפעם האחרונה: ${l.ok} מתוך ${l.n} בניסיון ראשון</em>`:''}</span></button>`;}).join('');
+  $$('#tgrid .tcard').forEach(b=>b.addEventListener('click',()=>{SFX.tap();startTopic(+b.dataset.t);}));
+}
+let shopTab='color',shopAsk=null;
+function renderShop(msg){
+  $('#shopWallet').innerHTML=walletHTML();
+  $$('#shopTabs .tab').forEach(b=>b.classList.toggle('on',b.dataset.t===shopTab));
+  $('#shopMsg').innerHTML=msg||'המחיר כתוב בפיצות שלמות. כל פיצה = 8 פרוסות 🍕';
+  const box=$('#shopItems');box.innerHTML='';
+  SHOP[shopTab].forEach(it=>{
+    const own=profile.owned[shopTab].includes(it.id),on=profile.eq[shopTab]===it.id,ask=shopAsk===it.id;
+    const pic=shopTab==='color'?`<span class="sw" style="background:${it.c==='rainbow'?'conic-gradient(#ff5b5b,#ffb02e,#ffe14d,#5ad16b,#35b3ff,#8e6bff,#ff5b5b)':it.c}"></span>`:`<span class="ie">${it.e}</span>`;
+    const b=el('button','item'+(on?' eq':'')+(ask?' ask':''),`${pic}<span>${it.name}</span><span class="ip">${on?'בשימוש ✓':own?'שלך – לחצי ללבוש':ask?'לקנות? לחצי שוב':it.price+' 🍕'}</span>`);b.type='button';
+    b.addEventListener('click',()=>{
+      if(own){profile.eq[shopTab]=it.id;shopAsk=null;save();SFX.tap();renderShop();return;}
+      const cost=it.price*8;
+      if(profile.slices<cost){shopAsk=null;SFX.no();renderShop(`חסרות לך עוד <b>${pzHTML(cost-profile.slices)}</b> ${cost-profile.slices<8?'פיצה':'פיצות'} בשביל ${it.name}. ממשיכים לשחק! 🎮`);return;}
+      if(!ask){shopAsk=it.id;SFX.tap();renderShop(`${it.name} עולה ${it.price} פיצות. לחצי שוב כדי לקנות.`);return;}
+      profile.slices-=cost;profile.owned[shopTab].push(it.id);profile.eq[shopTab]=it.id;shopAsk=null;save();SFX.win();
+      renderShop(`🎉 קנית ${it.name}! נשאר לך: ${pzPhrase(profile.slices)}.`);
+    });
+    box.appendChild(b);
+  });
+}
+const lab={shape:'bar',d:4,n:3};
+function renderLab(){
+  const {shape,d,n}=lab;
+  $('#labD').textContent=d;$('#labN').textContent=n;
+  $$('#labShape button').forEach(b=>b.classList.toggle('on',b.dataset.s===shape));
+  const wholes=Math.min(3,Math.max(1,Math.ceil((n+1)/d)));
+  $('#labVis').innerHTML=svgShapes(Object.assign({shape,d,wholes,filled:n,interactive:true},shape==='circle'?{r:56,perRow:3}:{bh:44}));
+  $('#labVis').style.setProperty('--fill','#ff9a6b');
+  const w=Math.floor(n/d),k=n%d;let eq=`${F(n,d)}`,say='',pill='';
+  if(n===0)say='אפס – לא צבענו כלום';
+  else if(n<d)say=fw(n,d)||chalki(n,d);
+  else if(k===0){eq+=` <span class="op">=</span> ${num(w)}`;say=w===1?`${fw(n,d)||chalki(n,d)} = שלם אחד`:`${w} שלמים`;}
+  else{eq+=` <span class="op">=</span> ${MX(w,k,d)}`;say=DEN[d]?mw(w,k,d):`${w} שלמים ועוד ${chalki(k,d)}`;}
+  pill=n<d?'<span class="lpill" style="background:#16b6a6">קטן מ־1</span>':n===d?'<span class="lpill" style="background:#e19e0b">שווה ל־1</span>':'<span class="lpill" style="background:#ff6b5b">גדול מ־1</span>';
+  $('#labOut').innerHTML=`<div class="eqline">${eq}</div><div class="say2">${say}</div>${pill}`;
+}
+function renderRules(){
+  const R1=svgShapes({shape:'bar',d:5,filled:3,bh:36,maxw:280});
+  const R3=svgShapes({shape:'circle',d:8,wholes:3,filled:19,r:34,gap:12,caps:['שלם','שלם',{n:3,d:8}],maxw:300});
+  const R4=svgShapes({shape:'circle',d:8,wholes:3,filled:19,r:34,gap:12,labels:'count',maxw:300});
+  const R6=svgWall({rows:[1,2,4,8],hl:{2:1,4:2,8:4},line:.5});
+  const rules=[
+    ['🍕 מונה ומכנה',`ב־${F(3,5)}: המכנה ${num(5)} (למטה) = לכמה חלקים <b>שווים</b> חילקנו את השלם. המונה ${num(3)} (למעלה) = כמה חלקים צבועים.`,R1],
+    ['🗣️ קוראים מלמעלה למטה',`קודם המונה, ואז שם החלקים:<br>${F(3,8)} = שלוש שמיניות • ${F(1,2)} = חצי • ${F(3,4)} = שלושה רבעים`,''],
+    ['🧩 מספר מעורב',`סופרים שלמים מלאים ← ${num(2)}. בעיגול האחרון צבועים 3 מתוך 8 ← ${F(3,8)}. ביחד: ${MX(2,3,8)}`,R3],
+    ['🔁 שבר גדול מ־1',`סופרים את <b>כל</b> החלקים הצבועים: ${sumEq([8,8,3],19)} ← ${F(19,8)}. המכנה נשאר 8!`,R4],
+    ['⚖️ משווים ל־1',`${F(3,5)} קטן מ־1 (מונה קטן)<br>${F(5,5)} שווה ל־1 (שווים)<br>${F(7,5)} גדול מ־1 (מונה גדול)`,''],
+    ['🪄 שברים שווים',`אותו אורך במקל = אותו שבר: ${EQ(F(1,2),F(2,4),F(4,8))}`,R6]
+  ];
+  $('#rules').innerHTML=rules.map(([h,p,s])=>`<div class="rule" style="--fill:#ff9a6b"><h4>${h}</h4><p>${p}</p>${s}</div>`).join('');
+  $('#names').innerHTML=[2,3,4,5,6,7,8,9,10].map(d=>{const x=d===3?2:3;return `<tr><td>${F(1,d)} = <b>${DEN[d].s}</b></td><td>${d===2?'':`${F(x,d)} = ${fw(x,d)}`}</td></tr>`;}).join('');
+}
+
+/* ============ mini character canvases ============ */
+function drawMini(cv,t){
+  if(!cv||!cv.isConnected)return;const r=cv.getBoundingClientRect();if(!r.width)return;
+  const dpr=Math.min(2,window.devicePixelRatio||1),W=Math.round(r.width*dpr),H=Math.round(r.height*dpr);
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  const c=cv.getContext('2d');c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W,H);
+  const s=W/64;c.setTransform(s,0,0,s,0,0);
+  c.fillStyle='rgba(36,33,74,.16)';ell(c,32,55,15,3.5);
+  drawPlayer(c,17,17+Math.sin(t*3)*1.1,{t,face:1,vx:0,onG:true,inv:0,land:0,color:colorOf(profile.eq.color),hat:profile.eq.hat});
+}
+
+/* ============ main loop ============ */
+let last=0,acc=0;const STEP=1/120;
+function frame(ts){
+  const t=ts/1000,dt=Math.min(.05,last?(ts-last)/1000:0);last=ts;
+  if(state.mode==='play'&&L&&!state.paused){
+    acc+=dt;let n=0;while(acc>=STEP&&n<8){step(STEP);acc-=STEP;n++;if(state.paused)break;}
+    for(const g of L.gates)if(g.state==='opening'){g.open+=dt*1.5;if(g.open>=1){g.open=1;g.state='open';}}
+    updParts(dt);
+    const target=clamp(P.x+P.w/2-VW*.38,0,Math.max(0,L.w-VW));cam.x+=(target-cam.x)*Math.min(1,dt*6);
+  }else{
+    acc=0;
+    if(state.mode==='menu'&&menuL){cam.x+=cam.dir*24*dt;const mx=Math.max(0,menuL.w-VW);if(cam.x>mx){cam.x=mx;cam.dir=-1;}if(cam.x<0){cam.x=0;cam.dir=1;}}
+    if(state.mode==='play')updParts(dt*.0);
+  }
+  try{render(t,dt);
+    if(state.screen==='scHome')drawMini($('#homeChar'),t);
+    if(state.screen==='scShop')drawMini($('#shopChar'),t);
+  }catch(e){if(!frame.err){frame.err=e;window.__FQ.err=String(e&&e.stack||e);console.error(e);}}
+  requestAnimationFrame(frame);
+}
+function resize(){
+  const w=Math.max(1,$('#app').clientWidth),h=Math.max(1,$('#app').clientHeight);
+  DPR=Math.min(2,window.devicePixelRatio||1);cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);
+  SCALE=Math.min(h/WH,w/560);VW=w/SCALE;VH=h/SCALE;skyKey='';
+}
+
+/* ============ input wiring ============ */
+function bindPad(id,key){
+  const b=$(id);
+  const down=e=>{e.preventDefault();audioInit();try{b.setPointerCapture(e.pointerId);}catch(_){}b.classList.add('down');if(key==='jump'){if(!input.jumpHeld)input.jumpEdge=true;input.jumpHeld=true;}else input[key]=true;};
+  const up=()=>{b.classList.remove('down');if(key==='jump')input.jumpHeld=false;else input[key]=false;};
+  b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+}
+function wire(){
+  bindPad('#bL','left');bindPad('#bR','right');bindPad('#bJ','jump');
+  document.addEventListener('pointerdown',audioInit,{passive:true});
+  $('#goPlay').addEventListener('click',()=>{SFX.tap();show('scTopics');});
+  $('#goLab').addEventListener('click',()=>{SFX.tap();show('scLab');});
+  $('#goShop').addEventListener('click',()=>{SFX.tap();shopAsk=null;show('scShop');});
+  $$('[data-go]').forEach(b=>b.addEventListener('click',()=>{SFX.tap();show(b.dataset.go);}));
+  $('#btnPause').addEventListener('click',()=>{SFX.tap();pauseGame();});
+  $('#btnSound').addEventListener('click',()=>{profile.sound=!profile.sound;save();updateHUD();if(profile.sound){audioInit();SFX.tap();}});
+  $$('#shopTabs .tab').forEach(b=>b.addEventListener('click',()=>{shopTab=b.dataset.t;shopAsk=null;SFX.tap();renderShop();}));
+  $$('#labShape button').forEach(b=>b.addEventListener('click',()=>{lab.shape=b.dataset.s;SFX.tap();renderLab();}));
+  $$('#scLab .stepper button').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k,v=+b.dataset.v;
+    if(k==='d'){lab.d=clamp(lab.d+v,2,12);lab.n=Math.min(lab.n,lab.d*3);}else lab.n=clamp(lab.n+v,0,lab.d*3);SFX.tap();renderLab();}));
+  $('#labVis').addEventListener('pointerdown',e=>{const t=e.target.closest('[data-i]');if(!t)return;const gi=+t.dataset.i;lab.n=gi+1===lab.n?gi:gi+1;SFX.tap();renderLab();});
+  const codes={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+  window.addEventListener('keydown',e=>{
+    if(!$('#qm').hidden){
+      if(/^[0-9]$/.test(e.key)){keyIn(e.key);e.preventDefault();}
+      else if(e.key==='Backspace'){keyIn('⌫');e.preventDefault();}
+      else if(e.key==='Tab'){keyIn('next');e.preventDefault();}
+      else if(e.key==='Enter'&&QS.checkFn&&!QS.done&&document.activeElement===document.body){QS.checkFn();e.preventDefault();}
+      return;
+    }
+    if(!$('#mm').hidden)return;
+    if(state.mode!=='play')return;
+    if(codes[e.code]){input[codes[e.code]]=true;e.preventDefault();}
+    if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'){if(!e.repeat&&!input.jumpHeld)input.jumpEdge=true;input.jumpHeld=true;e.preventDefault();}
+    if(e.code==='Escape')pauseGame();
+  });
+  window.addEventListener('keyup',e=>{if(codes[e.code])input[codes[e.code]]=false;if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW')input.jumpHeld=false;});
+  window.addEventListener('resize',resize);window.addEventListener('orientationchange',()=>setTimeout(resize,200));
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.mode==='play'&&!state.paused)pauseGame();});
+  window.addEventListener('blur',clearInput);
+}
+
+/* ============ self test (used while building) ============ */
+function selfTest(N){
+  N=N||150;const errs=[],bad=s=>typeof s==='string'&&/undefined|NaN|null|\[object/.test(s);
+  const chk=(o,tag)=>{const c=o.filter(x=>x.correct);if(c.length!==1)errs.push(tag+': correct='+c.length);if(o.length<3)errs.push(tag+': only '+o.length+' options');
+    if(new Set(o.map(x=>x.html)).size!==o.length)errs.push(tag+': duplicate options');if(o.some(x=>bad(x.html)||bad(x.why)))errs.push(tag+': bad option text');
+    const cv=c[0]&&c[0].v;if(cv)o.forEach(x=>{if(!x.correct&&x.v&&same(x.v[0],x.v[1],cv[0],cv[1]))errs.push(tag+': distractor equal to answer');});};
+  const toV=a=>a.map(x=>({w:x.w||0,n:x.n||0,d:x.d||0}));
+  Object.keys(G).forEach(name=>[0,1,2].forEach(diff=>(name==='t4_conv'?['toMixed','toWhole','toFrac']:[undefined]).forEach(vr=>{
+    for(let i=0;i<N;i++){
+      let q;try{q=G[name](diff,vr);}catch(e){errs.push(`${name}/${diff}: throws ${e.message}`);continue;}
+      const tag=`${name}/${diff}${vr?'/'+vr:''}`;
+      ['title','sub','explain','hint','reveal','visual','explainVis'].forEach(k=>{if(bad(q[k]))errs.push(`${tag}: bad ${k}: ${String(q[k]).slice(0,90)}`);});
+      if(!q.title)errs.push(tag+': no title');if(!SKILL[q.skill])errs.push(tag+': skill');
+      if(q.type==='mc')chk(q.options,tag);
+      else if(q.type==='steps')q.steps.forEach((s,j)=>chk(s.options,tag+' step'+j));
+      else if(q.type==='multi'){if(!q.items.some(x=>x.good))errs.push(tag+': no good item');if(q.items.some(x=>bad(x.html)))errs.push(tag+': bad item');if(q.flags){const w=q.items.filter(x=>x.good).map(x=>x.letter).join('');if(w!==q.word)errs.push(tag+': word '+w+'≠'+q.word);}}
+      else if(q.type==='input'){if(!q.ans)errs.push(tag+': no ans');else{const r=q.check(toV(q.ans));if(r)errs.push(`${tag}: correct answer rejected ${JSON.stringify(q.ans)} → ${r.msg}`);}
+        (q.wrongs||[]).forEach(wr=>{const r=q.check(toV(wr));if(!r)errs.push(`${tag}: wrong answer accepted ${JSON.stringify(wr)}`);else if(bad(r.msg)||!r.msg)errs.push(`${tag}: bad message for ${JSON.stringify(wr)}`);});}
+      else if(q.type==='paint'){if(q.check(q.target)!==null)errs.push(tag+': target rejected');const m=q.check(q.target+1);if(m===null||bad(m))errs.push(tag+': wrong count accepted/bad msg');if(q.target>1&&q.check(q.target-1)===null)errs.push(tag+': target-1 accepted');}
+      else if(q.type==='pick2'){if(q.check(q.ans)!==null)errs.push(tag+': ans rejected');if(q.rows.some((r,ri)=>r.items.filter(x=>x.key===q.ans[ri]).length!==1))errs.push(tag+': ans chip missing');if(q.rows.some(r=>r.items.some(x=>!x.html||bad(x.html))))errs.push(tag+': bad chip');}
+      else errs.push(tag+': unknown type '+q.type);
+    }
+  })));
+  for(let d=2;d<=10;d++)for(let n=1;n<=20;n++)if(!fw(n,d))errs.push('fw '+n+'/'+d);
+  const uniq=[...new Set(errs)];return uniq.slice(0,80).concat(uniq.length>80?['…'+(uniq.length-80)+' more']:[]);
+}
+function solveCurrent(){
+  const q=QS.q;if(!q||QS.done)return false;
+  if(q.type==='mc'){$$('#qAns .opt').find(b=>b.dataset.ok==='1').click();return true;}
+  if(q.type==='steps'){$$('#qAns .opt').find(b=>b.dataset.ok==='1').click();return true;}
+  if(q.type==='multi'){$$('#qAns [data-good]').forEach(b=>{const g=b.dataset.good==='1',s=b.classList.contains('sel');if(g!==s)b.click();});QS.checkFn();return true;}
+  if(q.type==='pick2'){q.rows.forEach((r,ri)=>$$(`#qAns .wchip[data-r="${ri}"]`).find(b=>+b.dataset.k===q.ans[ri]).click());QS.checkFn();return true;}
+  if(q.type==='paint'){const pts=$$('#qVis svg.paint .pt');pts.forEach((p,i)=>p.classList.toggle('on',i<q.target));QS.checkFn();return true;}
+  if(q.type==='input'){q.ans.forEach((a,fi)=>{['w','n','d'].forEach(p=>{if(a[p]!=null)QS.vals[fi][p]=String(a[p]);});});checkInput();return true;}
+  return false;
+}
+window.__FQ={G,selfTest,solveCurrent,TOPICS,fw,mw,startTopic,state,run,P,QS,input,get L(){return L;},openQuestion,showFb,toMenu,show};
+
+/* ============ boot ============ */
+function boot(data){
+  profile=mergeProfile((data&&data.profile)||loadLocal());
+  sliceSpr=makeSlice();
+  menuL=buildLevel(3,0,0);
+  resize();wire();renderRules();show('scHome');
+  requestAnimationFrame(frame);
+}
+try{if(window.claude&&window.claude.hot&&window.claude.hot.snapshot)window.claude.hot.snapshot(()=>({profile}));}catch(e){}
+if(window.claude&&window.claude.hot&&window.claude.hot.ready)window.claude.hot.ready(boot);
+else boot(window.claude&&window.claude.hot&&window.claude.hot.data||{});
+})();
+</script>
+</body>
+</html>
